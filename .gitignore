@@ -1,0 +1,14 @@
+# Local data that should not be committed to a public repo
+data/questions.json
+
+# Source documents should stay private
+source/*.pdf
+
+# Local environment variables
+.env.local
+
+# Dependencies and generated build output
+node_modules/
+.next/
+out/
+tsconfig.tsbuildinfo

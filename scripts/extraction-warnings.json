@@ -1,0 +1,923 @@
+[
+  {
+    "type": "vote_distribution",
+    "questionId": 11,
+    "message": "Ignored unlabeled vote percentage(s): 10",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 11,
+    "sourcePage": 28,
+    "imageDimensions": {
+      "width": 523,
+      "height": 478
+    },
+    "bbox": [
+      70.28,
+      180.6,
+      462.78,
+      539.32
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 12,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 12,
+    "sourcePage": 28,
+    "imageDimensions": {
+      "width": 523,
+      "height": 478
+    },
+    "bbox": [
+      70.28,
+      180.6,
+      462.78,
+      539.32
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 16,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 17,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 21,
+    "sourcePage": 50,
+    "imageDimensions": {
+      "width": 734,
+      "height": 312
+    },
+    "bbox": [
+      70.28,
+      102.54,
+      621.13,
+      336.69
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 22,
+    "sourcePage": 50,
+    "imageDimensions": {
+      "width": 734,
+      "height": 312
+    },
+    "bbox": [
+      70.28,
+      102.54,
+      621.13,
+      336.69
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 22,
+    "sourcePage": 52,
+    "imageDimensions": {
+      "width": 694,
+      "height": 231
+    },
+    "bbox": [
+      70.28,
+      180.6,
+      591.11,
+      353.96
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 23,
+    "sourcePage": 52,
+    "imageDimensions": {
+      "width": 694,
+      "height": 231
+    },
+    "bbox": [
+      70.28,
+      180.6,
+      591.11,
+      353.96
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 25,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 26,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 28,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 31,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 36,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 37,
+    "message": "Ignored unlabeled vote percentage(s): 7",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 38,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 39,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 40,
+    "message": "Ignored unlabeled vote percentage(s): 12, 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 41,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 42,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 45,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 48,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 50,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 52,
+    "message": "Ignored unlabeled vote percentage(s): 7",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 52,
+    "sourcePage": 117,
+    "imageDimensions": {
+      "width": 505,
+      "height": 334
+    },
+    "bbox": [
+      70.28,
+      122.05,
+      449.27,
+      372.71
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 53,
+    "message": "Ignored unlabeled vote percentage(s): 7",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 53,
+    "sourcePage": 117,
+    "imageDimensions": {
+      "width": 505,
+      "height": 334
+    },
+    "bbox": [
+      70.28,
+      122.05,
+      449.27,
+      372.71
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 54,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 55,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 56,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 58,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 61,
+    "message": "Ignored unlabeled vote percentage(s): 14, 10",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 63,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 71,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 72,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 73,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 75,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 77,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 78,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 79,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 81,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 83,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 84,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 88,
+    "message": "Ignored unlabeled vote percentage(s): 7",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 89,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 92,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 93,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 94,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 101,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 102,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 103,
+    "message": "Ignored unlabeled vote percentage(s): 3",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 104,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 105,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 107,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 108,
+    "message": "Ignored unlabeled vote percentage(s): 6",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 109,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 112,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 115,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 122,
+    "message": "Ignored unlabeled vote percentage(s): 11, 11",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 125,
+    "sourcePage": 261,
+    "imageDimensions": {
+      "width": 624,
+      "height": 279
+    },
+    "bbox": [
+      70.28,
+      141.57,
+      538.57,
+      350.95
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 126,
+    "sourcePage": 261,
+    "imageDimensions": {
+      "width": 624,
+      "height": 279
+    },
+    "bbox": [
+      70.28,
+      141.57,
+      538.57,
+      350.95
+    ],
+    "reason": "substantial page image",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 128,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 129,
+    "sourcePage": 267,
+    "imageDimensions": null,
+    "bbox": null,
+    "reason": "question text refers to visual content but no clear extracted image was found",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 136,
+    "message": "Ignored unlabeled vote percentage(s): 5",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 138,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 139,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 140,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 141,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 144,
+    "message": "Ignored unlabeled vote percentage(s): 14, 14",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 144,
+    "sourcePage": 300,
+    "imageDimensions": {
+      "width": 452,
+      "height": 83
+    },
+    "bbox": [
+      70.28,
+      141.57,
+      409.49,
+      203.86
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 145,
+    "sourcePage": 300,
+    "imageDimensions": {
+      "width": 452,
+      "height": 83
+    },
+    "bbox": [
+      70.28,
+      141.57,
+      409.49,
+      203.86
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 148,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 152,
+    "message": "Ignored unlabeled vote percentage(s): 11, 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 154,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 158,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 165,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 167,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 168,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 171,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 173,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 177,
+    "message": "Ignored unlabeled vote percentage(s): 10",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 178,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 182,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 184,
+    "message": "Ignored unlabeled vote percentage(s): 11",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 189,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 196,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 200,
+    "sourcePage": 394,
+    "imageDimensions": {
+      "width": 624,
+      "height": 80
+    },
+    "bbox": [
+      70.28,
+      141.57,
+      538.57,
+      201.61
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 200,
+    "sourcePage": 394,
+    "imageDimensions": {
+      "width": 384,
+      "height": 200
+    },
+    "bbox": [
+      70.28,
+      260.16,
+      358.46,
+      410.26
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 201,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 201,
+    "sourcePage": 394,
+    "imageDimensions": {
+      "width": 624,
+      "height": 80
+    },
+    "bbox": [
+      70.28,
+      141.57,
+      538.57,
+      201.61
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 201,
+    "sourcePage": 394,
+    "imageDimensions": {
+      "width": 384,
+      "height": 200
+    },
+    "bbox": [
+      70.28,
+      260.16,
+      358.46,
+      410.26
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 208,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 212,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 219,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 220,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 237,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 238,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 239,
+    "message": "Ignored unlabeled vote percentage(s): 8",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 239,
+    "sourcePage": 452,
+    "imageDimensions": null,
+    "bbox": null,
+    "reason": "question text refers to visual content but no clear extracted image was found",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 242,
+    "message": "Ignored unlabeled vote percentage(s): 10",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 246,
+    "message": "Ignored unlabeled vote percentage(s): 4",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 247,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 249,
+    "message": "Ignored unlabeled vote percentage(s): 10",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 252,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 256,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 258,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 258,
+    "sourcePage": 484,
+    "imageDimensions": {
+      "width": 581,
+      "height": 194
+    },
+    "bbox": [
+      70.28,
+      200.1,
+      506.3,
+      345.69
+    ],
+    "reason": "meaningful image dimensions",
+    "manualReview": false
+  },
+  {
+    "type": "image_detection",
+    "questionId": 259,
+    "sourcePage": 484,
+    "imageDimensions": {
+      "width": 581,
+      "height": 194
+    },
+    "bbox": [
+      70.28,
+      200.1,
+      506.3,
+      345.69
+    ],
+    "reason": "question text refers to visual content",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 262,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 263,
+    "message": "Ignored unlabeled vote percentage(s): 9",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 269,
+    "message": "Ignored unlabeled vote percentage(s): 7",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 270,
+    "message": "Ignored unlabeled vote percentage(s): 13",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 271,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 272,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 278,
+    "message": "Ignored unlabeled vote percentage(s): 14",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 279,
+    "message": "Ignored unlabeled vote percentage(s): 13, 13",
+    "manualReview": true
+  },
+  {
+    "type": "image_detection",
+    "questionId": 279,
+    "sourcePage": 516,
+    "imageDimensions": null,
+    "bbox": null,
+    "reason": "question text refers to visual content but no clear extracted image was found",
+    "manualReview": true
+  },
+  {
+    "type": "vote_distribution",
+    "questionId": 281,
+    "message": "Ignored unlabeled vote percentage(s): 10",
+    "manualReview": true
+  }
+]

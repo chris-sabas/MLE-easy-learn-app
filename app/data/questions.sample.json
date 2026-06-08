@@ -1,0 +1,405 @@
+[
+  {
+    "id": 1,
+    "question": "You are building an ML model to detect anomalies in real-time sensor data. You will use Pub/Sub to handle incoming requests. You want to\nstore the results for analytics and visualization. How should you configure the pipeline?",
+    "choices": {
+      "A": "1 = Dataflow, 2 = AI Platform, 3 = BigQuery",
+      "B": "1 = DataProc, 2 = AutoML, 3 = Cloud Bigtable",
+      "C": "1 = BigQuery, 2 = AutoML, 3 = Cloud Functions",
+      "D": "1 = BigQuery, 2 = AI Platform, 3 = Cloud Storage"
+    },
+    "voteDistribution": {
+      "A": 100
+    },
+    "comments": [
+      {
+        "author": "esuaaaa",
+        "text": "Definitely A. Dataflow is must.",
+        "votes": 21
+      },
+      {
+        "author": "inder0007",
+        "text": "Even if I follow the link, it should be dataflow, AI-Platform and Bigquery. \nReal answer should be A",
+        "votes": 10
+      },
+      {
+        "author": "Yorko",
+        "text": "BigQuery for analytics 100%",
+        "votes": 1
+      },
+      {
+        "author": "PhilipKoku",
+        "text": "Big Query is ideal for analytics",
+        "votes": 1
+      },
+      {
+        "author": "RPS007",
+        "text": "Verified Answer",
+        "votes": 1
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "question": "Your organization wants to make its internal shuttle service route more efficient. The shuttles currently stop at all pick-up points across the\ncity every 30 minutes between 7 am and 10 am. The development team has already built an application on Google Kubernetes Engine that\nrequires users to confirm their presence and shuttle station one day in advance. What approach should you take?",
+    "choices": {
+      "A": "1. Build a tree-based regression model that predicts how many passengers will be picked up at each shuttle station. 2. Dispatch an\nappropriately sized shuttle and provide the map with the required stops based on the prediction.",
+      "B": "1. Build a tree-based classification model that predicts whether the shuttle should pick up passengers at each shuttle station. 2.\nDispatch an available shuttle and provide the map with the required stops based on the prediction.",
+      "C": "1. Define the optimal route as the shortest route that passes by all shuttle stations with confirmed attendance at the given time under\ncapacity constraints. 2. Dispatch an appropriately sized shuttle and indicate the required stops on the map.",
+      "D": "1. Build a reinforcement learning model with tree-based classification models that predict the presence of passengers at shuttle stops\nas agents and a reward function around a distance-based metric. 2. Dispatch an appropriately sized shuttle and provide the map with the\nrequired stops based on the simulated outcome."
+    },
+    "voteDistribution": {
+      "C": 94
+    },
+    "comments": [
+      {
+        "author": "nissili",
+        "text": "C: for all confirmed.",
+        "votes": 24
+      },
+      {
+        "author": "sensev",
+        "text": "I agree with this, because it mentioned that they now \"require users to confirm their presence\". I think this is an example of when a classical\nrouting algorithm is a better fit compare to ML-approach.",
+        "votes": 12
+      },
+      {
+        "author": "fragkris",
+        "text": "C - Since we have the attendance list in advance. Tree-based classification, regression and reinforced learning sounds useless in this case.",
+        "votes": 2
+      },
+      {
+        "author": "enghabeth",
+        "text": "C. route more efficient is an optimization model",
+        "votes": 2
+      },
+      {
+        "author": "PhilipKoku",
+        "text": "C is the option that covers the scenario.",
+        "votes": 1
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "question": "You were asked to investigate failures of a production line component based on sensor readings. After receiving the dataset, you discover\nthat less than 1% of the readings are positive examples representing failure incidents. You have tried to train several classification models,\nbut none of them converge. How should you resolve the class imbalance problem?",
+    "choices": {
+      "A": "Use the class distribution to generate 10% positive examples.",
+      "B": "Use a convolutional neural network with max pooling and softmax activation.",
+      "C": "Downsample the data with upweighting to create a sample with 10% positive examples.",
+      "D": "Remove negative examples until the numbers of positive and negative examples are equal."
+    },
+    "voteDistribution": {
+      "C": 93
+    },
+    "comments": [
+      {
+        "author": "celia20200410",
+        "text": "ANS: C \nhttps://developers.google.com/machine-learning/data-prep/construct/sampling-splitting/imbalanced-data#downsampling-and-upweighting \n \n- less than 1% of the readings are positive \n- none of them converge. \n \nDownsampling (in this context) means training on a disproportionately low subset of the majority class examples.",
+        "votes": 30
+      },
+      {
+        "author": "AlexZot",
+        "text": "Correct answer is C. Do not forget about bias term which is also trainable parameter.",
+        "votes": 3
+      },
+      {
+        "author": "suresh_vn",
+        "text": "C is correct. 2nd Layer with use_bias = True",
+        "votes": 3
+      },
+      {
+        "author": "Mohamed_Mossad",
+        "text": "my bad , this was tricky \"The Dropout Layer randomly disables neurons during training. They still are present in your model and therefore\naren´t discounted from the number of parameters in your model summary.\" , so D is wrong , C and A takes care of the bias , but C is correct",
+        "votes": 2
+      },
+      {
+        "author": "fragkris",
+        "text": "C - Downsample the majority and add weights to it.",
+        "votes": 2
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "question": "You want to rebuild your ML pipeline for structured data on Google Cloud. You are using PySpark to conduct data transformations at scale, but\nyour pipelines are taking over 12 hours to run. To speed up development and pipeline run time, you want to use a serverless tool and SQL\nsyntax. You have already moved your raw data into Cloud Storage. How should you build the pipeline on Google Cloud while meeting the\nspeed and processing requirements?",
+    "choices": {
+      "A": "Use Data Fusion's GUI to build the transformation pipelines, and then write the data into BigQuery.",
+      "B": "Convert your PySpark into SparkSQL queries to transform the data, and then run your pipeline on Dataproc to write the data into\nBigQuery.",
+      "C": "Ingest your data into Cloud SQL, convert your PySpark commands into SQL queries to transform the data, and then use federated\nqueries from BigQuery for machine learning.",
+      "D": "Ingest your data into BigQuery using BigQuery Load, convert your PySpark commands into BigQuery SQL queries to transform the data,\nand then write the transformations to a new table."
+    },
+    "voteDistribution": {
+      "D": 73,
+      "B": 19
+    },
+    "comments": [
+      {
+        "author": "nunzio144",
+        "text": "It should be D .... Data Fusion is not SQL syntax ....",
+        "votes": 20
+      },
+      {
+        "author": "Celia20210714",
+        "text": "ANS: A \nhttps://cloud.google.com/data-fusion#section-1 \n- Data Fusion is a serverless approach leveraging the scalability and reliability of Google services like Dataproc means Data Fusion offers the best\nof data integration capabilities with a lower total cost of ownership. \n- BigQuery is serverless and supports SQL. \n- Dataproc is not serverless, you have to manage clusters. \n- Cloud SQL is not serverless, you have to manage instances.",
+        "votes": 11
+      },
+      {
+        "author": "q4exam",
+        "text": "Agree, BQ is the only serverless that support SQL",
+        "votes": 4
+      },
+      {
+        "author": "mousseUwU",
+        "text": "Data Fusion is serverless: https://cloud.google.com/data-fusion#all-features",
+        "votes": 3
+      },
+      {
+        "author": "M25",
+        "text": "Went with D",
+        "votes": 3
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "question": "You manage a team of data scientists who use a cloud-based backend system to submit training jobs. This system has become very difficult to\nadminister, and you want to use a managed service instead. The data scientists you work with use many different frameworks, including\nKeras, PyTorch, theano, Scikit-learn, and custom libraries. What should you do?",
+    "choices": {
+      "A": "Use the AI Platform custom containers feature to receive training jobs using any framework.",
+      "B": "Configure Kubeflow to run on Google Kubernetes Engine and receive training jobs through TF Job.",
+      "C": "Create a library of VM images on Compute Engine, and publish these images on a centralized repository.",
+      "D": "Set up Slurm workload manager to receive jobs that can be scheduled to run on your cloud infrastructure."
+    },
+    "voteDistribution": {
+      "A": 95
+    },
+    "comments": [
+      {
+        "author": "gcp2021go",
+        "text": "the answer is A",
+        "votes": 24
+      },
+      {
+        "author": "guruguru",
+        "text": "A, because AI platform supported all the frameworks mentioned. And Kubeflow is not managed service in GCP. https://cloud.google.com/ai-\nplatform/training/docs/getting-started-pytorch",
+        "votes": 10
+      },
+      {
+        "author": "EFIGO",
+        "text": "Now it's Vertex AI (instead of AI Platform), but it's the best solution, no need to do anything more complicated",
+        "votes": 4
+      },
+      {
+        "author": "abhi0706",
+        "text": "A - Vertex AI now",
+        "votes": 3
+      },
+      {
+        "author": "Sum_Sum",
+        "text": "A is the only Google managed service solution \nB,C - are not managed \nD- is a 3rd party",
+        "votes": 2
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "question": "You work for an online retail company that is creating a visual search engine. You have set up an end-to-end ML pipeline on Google Cloud to\nclassify whether an image contains your company's product. Expecting the release of new products in the near future, you configured a\nretraining functionality in the pipeline so that new data can be fed into your ML models. You also want to use AI Platform's continuous\nevaluation service to ensure that the models have high accuracy on your test dataset. What should you do?",
+    "choices": {
+      "A": "Keep the original test dataset unchanged even if newer products are incorporated into retraining.",
+      "B": "Extend your test dataset with images of the newer products when they are introduced to retraining.",
+      "C": "Replace your test dataset with images of the newer products when they are introduced to retraining.",
+      "D": "Update your test dataset with images of the newer products when your evaluation metrics drop below a pre-decided threshold."
+    },
+    "voteDistribution": {
+      "B": 82,
+      "D": 18
+    },
+    "comments": [
+      {
+        "author": "esuaaaa",
+        "text": "I think B is the right answer. \n \nA: Doesn't make sense. If you don't use the new product, it becomes useless. \nC: Conventional products are also necessary as data. \nD: I don't understand the need to wait until the threshold is exceeded.",
+        "votes": 31
+      },
+      {
+        "author": "gcp2021go",
+        "text": "answer is B",
+        "votes": 11
+      },
+      {
+        "author": "VincenzoP84",
+        "text": "D could have sense considering that is mentioned the intention to use AI Platform's continuous evaluation service",
+        "votes": 2
+      },
+      {
+        "author": "maukaba",
+        "text": "it's D for two reasons: \n- explicitly required in the question to leverage Continuous evaluation service \n- the threshod check allows to decide when perform the retrain avoiding making it for every single new data arrived.",
+        "votes": 2
+      },
+      {
+        "author": "M25",
+        "text": "Went with B",
+        "votes": 2
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "question": "You need to build classification workflows over several structured datasets currently stored in BigQuery. Because you will be performing the\nclassification several times, you want to complete the following steps without writing code: exploratory data analysis, feature selection, model\nbuilding, training, and hyperparameter tuning and serving. What should you do?",
+    "choices": {
+      "A": "Configure AutoML Tables to perform the classification task.",
+      "B": "Run a BigQuery ML task to perform logistic regression for the classification.",
+      "C": "Use AI Platform Notebooks to run the classification model with pandas library.",
+      "D": "Use AI Platform to run the classification model job configured for hyperparameter tuning."
+    },
+    "voteDistribution": {
+      "A": 100
+    },
+    "comments": [
+      {
+        "author": "guruguru",
+        "text": "A. Because BigQuery ML need to write code.",
+        "votes": 25
+      },
+      {
+        "author": "coderpk",
+        "text": "C custom container and distributed system",
+        "votes": 4
+      },
+      {
+        "author": "NamitSehgal",
+        "text": "A is correct \nhttps://cloud.google.com/automl-tables/docs/beginners-guide",
+        "votes": 3
+      },
+      {
+        "author": "A4M",
+        "text": "Answer - C \nIt's between A & C \nC - Because the questions states data too large to fit in memory hence distributed training is relevant",
+        "votes": 3
+      },
+      {
+        "author": "morgan62",
+        "text": "C is the answer without doubt. \nA: Distributed? Nope \nB: Built-in? Nope \nD: Reconfig? Nope",
+        "votes": 3
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "question": "You work for a public transportation company and need to build a model to estimate delay times for multiple transportation routes.\nPredictions are served directly to users in an app in real time. Because different seasons and population increases impact the data relevance,\nyou will retrain the model every month. You want to follow Google-recommended best practices. How should you configure the end-to-end\narchitecture of the predictive model?",
+    "choices": {
+      "A": "Configure Kubeflow Pipelines to schedule your multi-step workflow from training to deploying your model.",
+      "B": "Use a model trained and deployed on BigQuery ML, and trigger retraining with the scheduled query feature in BigQuery.",
+      "C": "Write a Cloud Functions script that launches a training and deploying job on AI Platform that is triggered by Cloud Scheduler.",
+      "D": "Use Cloud Composer to programmatically schedule a Dataflow job that executes the workflow from training to deploying your model."
+    },
+    "voteDistribution": {
+      "A": 100
+    },
+    "comments": [
+      {
+        "author": "Paul_Dirac",
+        "text": "Answer: A \nA. Kubeflow Pipelines can form an end-to-end architecture (https://www.kubeflow.org/docs/components/pipelines/overview/pipelines-\noverview/) and deploy models. \nB. BigQuery ML can't offer an end-to-end architecture because it must use another tool, like AI Platform, for serving models at the end of the\nprocess (https://cloud.google.com/bigquery-ml/docs/export-model-tutorial#online_deployment_and_serving). \nC. Cloud Scheduler can trigger the first step in a pipeline, but then some orchestrator is needed to continue the remaining steps. Besides, having\nCloud Scheduler alone can't ensure failure handling during pipeline execution. \nD. A Dataflow job can't deploy models, it must use AI Platform at the end instead.",
+        "votes": 39
+      },
+      {
+        "author": "gcp2021go",
+        "text": "the answer is D. found similar explaination in this course. open for discussion. I found B could also work, but the question asked for end-to end,\nthus I choose D in stead of B https://www.coursera.org/lecture/ml-pipelines-google-cloud/what-is-cloud-composer-CuXTQ",
+        "votes": 11
+      },
+      {
+        "author": "celia20200410",
+        "text": "ANS: A \nhttps://medium.com/google-cloud/how-to-build-an-end-to-end-propensity-to-purchase-solution-using-bigquery-ml-and-kubeflow-pipelines-\ncd4161f734d9#75c7 \n \n\nTo automate this model-building process, you will orchestrate the pipeline using Kubeflow Pipelines, ‘a platform for building and deploying\nportable, scalable machine learning (ML) workflows based on Docker containers.’",
+        "votes": 6
+      },
+      {
+        "author": "mousseUwU",
+        "text": "I guess it's A",
+        "votes": 3
+      },
+      {
+        "author": "george_ognyanov",
+        "text": "Answer seems to be A really. Here is a link from Google-recommended best practices. They are talking about Vertex AI Pipelines, which\nare essentially Kubeflow. \n \nhttps://cloud.google.com/architecture/ml-on-gcp-best-practices?hl=en#machine-learning-workflow-orchestration\n \n\nTopic 1",
+        "votes": 3
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "question": "You are developing ML models with AI Platform for image segmentation on CT scans. You frequently update your model architectures based\non the newest available research papers, and have to rerun training on the same dataset to benchmark their performance. You want to\nminimize computation costs and manual intervention while having version control for your code. What should you do?",
+    "choices": {
+      "A": "Use Cloud Functions to identify changes to your code in Cloud Storage and trigger a retraining job.",
+      "B": "Use the gcloud command-line tool to submit training jobs on AI Platform when you update your code.",
+      "C": "Use Cloud Build linked with Cloud Source Repositories to trigger retraining when new code is pushed to the repository.",
+      "D": "Create an automated workflow in Cloud Composer that runs daily and looks for changes in code in Cloud Storage using a sensor."
+    },
+    "voteDistribution": {
+      "C": 100
+    },
+    "comments": [
+      {
+        "author": "celia20200410",
+        "text": "ANS:C \n \nCI/CD for Kubeflow pipelines. \n \nAt the heart of this architecture is Cloud Build, infrastructure. Cloud Build can import source from Cloud Source Repositories, GitHub, or Bitbucket\nand then execute a build to your specifications, and produce artifacts such as Docker containers or Python tar files.",
+        "votes": 26
+      },
+      {
+        "author": "chohan",
+        "text": "Should be C \nhttps://cloud.google.com/architecture/architecture-for-mlops-using-tfx-kubeflow-pipelines-and-cloud-build#cicd_architecture",
+        "votes": 10
+      },
+      {
+        "author": "q4exam",
+        "text": "I think B might be make sense if they have compute concern, there might be many version change but not all that you want to trigger comput",
+        "votes": 3
+      },
+      {
+        "author": "caohieu04",
+        "text": "Community vote",
+        "votes": 3
+      },
+      {
+        "author": "GCP72",
+        "text": "Correct answer is \"C\"",
+        "votes": 2
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "question": "Your team needs to build a model that predicts whether images contain a driver's license, passport, or credit card. The data engineering team\nalready built the pipeline and generated a dataset composed of 10,000 images with driver's licenses, 1,000 images with passports, and 1,000\nimages with credit cards. You now have to train a model with the following label map: ['drivers_license', 'passport', 'credit_card']. Which\nloss function should you use?",
+    "choices": {
+      "A": "Categorical hinge",
+      "B": "Binary cross-entropy",
+      "C": "Categorical cross-entropy",
+      "D": "Sparse categorical cross-entropy"
+    },
+    "voteDistribution": {
+      "C": 50,
+      "D": 50
+    },
+    "comments": [
+      {
+        "author": "ransev",
+        "text": "Answer is C",
+        "votes": 19
+      },
+      {
+        "author": "gcp2021go",
+        "text": "answer is D \nhttps://machinelearningmastery.com/how-to-choose-loss-functions-when-training-deep-learning-neural-networks/",
+        "votes": 10
+      },
+      {
+        "author": "gcp2021go",
+        "text": "Use sparse categorical crossentropy when your classes are mutually exclusive (e.g. when each sample belongs exactly to one class) and\ncategorical crossentropy when one sample can have multiple classes or labels are soft probabilities (like [0.5, 0.3, 0.2]).",
+        "votes": 9
+      },
+      {
+        "author": "GogoG",
+        "text": "Definitely C - the target variable label formulated in the question requires a categorical cross entropy loss function i.e. 3 columns\n'drivers_license' , 'passport', 'credit_card' that can take values 1, 0. Meanwhile sparse categorical cross entropy would require the labels to be\ninteger encoded in a single vector, for example, 'drivers_license' = 1, 'passport' = 2, 'credit_card' = 3.",
+        "votes": 8
+      },
+      {
+        "author": "ori5225",
+        "text": "Use sparse categorical crossentropy when your classes are mutually exclusive (e.g. when each sample belongs exactly to one class) and\ncategorical crossentropy when one sample can have multiple classes or labels are soft probabilities (like [0.5, 0.3, 0.2]).",
+        "votes": 3
+      }
+    ]
+  }
+]
