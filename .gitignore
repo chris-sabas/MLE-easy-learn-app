@@ -1,6 +1,3 @@
-# Local data that should not be committed to a public repo
-data/questions.json
-
 # Source documents should stay private
 source/*.pdf
 
