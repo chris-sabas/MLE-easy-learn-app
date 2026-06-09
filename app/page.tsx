@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import questionsData from "./data/questions.json";
 import {
   choiceEntries,
@@ -12,12 +14,19 @@ import {
   shouldShowCommunityData,
   type ChoiceKey,
 } from "../lib/quiz";
+import { getProgressResult } from "../lib/progress";
+import { createClient } from "../lib/supabase/client";
 
 const questions = normalizeQuestions(questionsData);
 type Theme = "light" | "dark";
 type ModelProvider = "openai" | "gemini";
 type AiMode = "explain" | "custom" | "followup" | "general";
 type ChatMessage = { role: "user" | "assistant"; content: string };
+type BookmarkRecord = { question_id: number; created_at: string };
+type ProfileState = {
+  username: string;
+  last_question_id: number | null;
+};
 
 function renderInlineMarkdown(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
@@ -85,6 +94,7 @@ function renderMarkdown(content: string, theme: Theme) {
 }
 
 export default function Home() {
+  const router = useRouter();
   const sortedQuestions = useMemo(() => questions, []);
   const firstQuestion = sortedQuestions[0];
   const lastQuestion = sortedQuestions[sortedQuestions.length - 1];
@@ -102,6 +112,13 @@ export default function Home() {
   const [aiError, setAiError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<ProfileState | null>(null);
+  const [bookmarks, setBookmarks] = useState<BookmarkRecord[]>([]);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [savingProgress, setSavingProgress] = useState(false);
+  const [savingBookmark, setSavingBookmark] = useState(false);
+  const [supabaseError, setSupabaseError] = useState("");
 
   const currentQuestion = findQuestionById(sortedQuestions, currentId) ?? firstQuestion;
   const currentIndex = sortedQuestions.findIndex((question) => question.id === currentQuestion.id);
@@ -109,6 +126,8 @@ export default function Home() {
   const voteEntries = positiveVoteEntries(currentQuestion);
   const hasVotes = voteEntries.length > 0;
   const hasAiConversation = aiMessages.length > 0;
+  const bookmarkIds = useMemo(() => new Set(bookmarks.map((bookmark) => bookmark.question_id)), [bookmarks]);
+  const isBookmarked = bookmarkIds.has(currentQuestion.id);
 
   useEffect(() => {
     const saved = localStorage.getItem("quiz-theme");
@@ -124,6 +143,80 @@ export default function Home() {
     localStorage.setItem("quiz-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAccountData() {
+      const supabase = createClient();
+      if (!supabase) {
+        setSupabaseError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.");
+        setSessionLoading(false);
+        return;
+      }
+
+      setSessionLoading(true);
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (cancelled) return;
+      if (userError || !user) {
+        router.push("/auth/sign-in");
+        return;
+      }
+
+      setUserId(user.id);
+
+      const [{ data: profileData, error: profileError }, { data: bookmarkData, error: bookmarkError }] =
+        await Promise.all([
+          supabase.from("profiles").select("username,last_question_id").eq("id", user.id).single(),
+          supabase.from("bookmarks").select("question_id,created_at").eq("user_id", user.id),
+        ]);
+
+      if (cancelled) return;
+
+      const firstError = profileError ?? bookmarkError;
+      if (firstError) {
+        setSupabaseError(firstError.message);
+      }
+
+      if (profileData) {
+        const nextProfile = profileData as ProfileState;
+        setProfile(nextProfile);
+        const requestedQuestionId = Number(new URLSearchParams(window.location.search).get("question"));
+        const questionToRestore = Number.isInteger(requestedQuestionId) && findQuestionById(sortedQuestions, requestedQuestionId)
+          ? requestedQuestionId
+          : nextProfile.last_question_id;
+        if (questionToRestore && findQuestionById(sortedQuestions, questionToRestore)) {
+          resetForQuestion(questionToRestore);
+        }
+      }
+
+      setBookmarks((bookmarkData ?? []) as BookmarkRecord[]);
+      setSessionLoading(false);
+    }
+
+    loadAccountData();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, sortedQuestions]);
+
+  useEffect(() => {
+    if (!userId || sessionLoading) return;
+    const supabase = createClient();
+    if (!supabase) return;
+
+    supabase
+      .from("profiles")
+      .update({ last_question_id: currentQuestion.id })
+      .eq("id", userId)
+      .then(({ error }) => {
+        if (error) setSupabaseError(error.message);
+      });
+  }, [currentQuestion.id, sessionLoading, userId]);
+
   function resetForQuestion(questionId: number) {
     setCurrentId(questionId);
     setNumberInput(String(questionId));
@@ -135,6 +228,66 @@ export default function Home() {
     setAiError("");
     setCopyMessage("");
   }
+
+  async function saveAnswerProgress(answer: ChoiceKey) {
+    setSelectedChoice(answer);
+    if (!userId) return;
+
+    const supabase = createClient();
+    if (!supabase) {
+      setSupabaseError("Supabase is not configured.");
+      return;
+    }
+
+    const result = getProgressResult(currentQuestion, answer);
+    const answeredAt = new Date().toISOString();
+    const row = {
+      user_id: userId,
+      question_id: currentQuestion.id,
+      selected_answer: answer,
+      result,
+      answered_at: answeredAt,
+      updated_at: answeredAt,
+    };
+
+    setSavingProgress(true);
+    const { error } = await supabase.from("question_progress").upsert(row, { onConflict: "user_id,question_id" });
+    setSavingProgress(false);
+
+    if (error) {
+      setSupabaseError(error.message);
+      return;
+    }
+
+  }
+
+  async function toggleBookmark(questionId = currentQuestion.id) {
+    if (!userId) return;
+    const supabase = createClient();
+    if (!supabase) {
+      setSupabaseError("Supabase is not configured.");
+      return;
+    }
+
+    setSavingBookmark(true);
+    const bookmarked = bookmarkIds.has(questionId);
+    const { error } = bookmarked
+      ? await supabase.from("bookmarks").delete().eq("user_id", userId).eq("question_id", questionId)
+      : await supabase.from("bookmarks").insert({ user_id: userId, question_id: questionId });
+    setSavingBookmark(false);
+
+    if (error) {
+      setSupabaseError(error.message);
+      return;
+    }
+
+    setBookmarks((items) =>
+      bookmarked
+        ? items.filter((item) => item.question_id !== questionId)
+        : [...items, { question_id: questionId, created_at: new Date().toISOString() }],
+    );
+  }
+
 
   function buildManualPrompt() {
     if (!selectedChoice) {
@@ -266,13 +419,6 @@ export default function Home() {
                 >
                   {selectedChoice ? "Ask custom question" : "Ask general question"}
                 </button>
-                <button
-                  className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
-                  type="button"
-                  onClick={copyPrompt}
-                >
-                  Copy prompt
-                </button>
               </div>
               {copyMessage ? <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>{copyMessage}</p> : null}
             </div>
@@ -364,6 +510,14 @@ export default function Home() {
     if (next) resetForQuestion(next.id);
   }
 
+  if (sessionLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-stone-100 px-4">
+        <p className="rounded border border-stone-300 bg-white p-4 text-sm text-stone-700">Loading session...</p>
+      </main>
+    );
+  }
+
   return (
     <main className={`min-h-screen px-4 py-5 sm:px-6 lg:px-8 ${theme === "dark" ? "bg-stone-950 text-stone-100" : "bg-stone-100 text-stone-950"}`}>
       <div className="mx-auto flex max-w-5xl flex-col gap-5">
@@ -373,6 +527,10 @@ export default function Home() {
             <h1 className={`text-2xl font-semibold sm:text-3xl ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>Question #{currentQuestion.id}</h1>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {profile ? <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-700"}`}>{profile.username}</span> : null}
+            <Link className={`rounded border px-3 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-600 bg-stone-900 text-stone-100" : "border-stone-300 bg-white text-stone-900"}`} href="/profile">
+              Profile
+            </Link>
             <button
               className={`rounded border px-3 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-600 bg-stone-900 text-stone-100" : "border-stone-300 bg-white text-stone-900"}`}
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -381,6 +539,10 @@ export default function Home() {
             </button>
           </div>
         </header>
+
+        {supabaseError ? (
+          <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{supabaseError}</div>
+        ) : null}
 
         <section className={`grid gap-3 rounded border p-3 sm:grid-cols-2 sm:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
           <div className="flex flex-col gap-2">
@@ -434,6 +596,17 @@ export default function Home() {
         </section>
 
         <section className={`rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <span className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Question #{currentQuestion.id}</span>
+            <button
+              className={`rounded border px-3 py-2 text-sm font-medium disabled:opacity-60 ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
+              disabled={savingBookmark}
+              onClick={() => toggleBookmark()}
+            >
+              {isBookmarked ? "Remove bookmark" : "Bookmark"}
+            </button>
+          </div>
+
           {currentQuestion.hasImage ? (
             <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
               This question includes an image from the source document that is not currently displayed.
@@ -457,13 +630,14 @@ export default function Home() {
                         ? "border-stone-700 bg-stone-950 hover:bg-stone-800"
                         : "border-stone-300 bg-white hover:bg-stone-50"
                   }`}
-                  onClick={() => setSelectedChoice(key)}
+                  onClick={() => saveAnswerProgress(key)}
                 >
                   <span className="font-semibold">{key}.</span> {text}
                 </button>
               );
             })}
           </div>
+          {savingProgress ? <p className="mt-3 text-sm text-teal-700">Saving progress...</p> : null}
 
           <div className="mt-5 flex justify-between gap-2">
             <button

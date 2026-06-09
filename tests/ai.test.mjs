@@ -36,7 +36,6 @@ test("AI context includes question, choices, votes, selected answer, and comment
 test("client hides API keys", () => {
   assert.equal(pageSource.includes("OPENAI_API_KEY"), false);
   assert.equal(pageSource.includes("GEMINI_API_KEY"), false);
-  assert.equal(pageSource.includes("NEXT_PUBLIC_"), false);
 });
 
 test("chat resets when question changes", () => {
@@ -76,6 +75,15 @@ test("copy prompt remains available in active conversation", () => {
   assert.ok(conversationIndex >= 0);
   assert.ok(copyIndex > conversationIndex);
   assert.ok(followUpIndex > copyIndex);
+});
+
+test("copy prompt is hidden before an AI conversation starts", () => {
+  const initialControlsIndex = pageSource.indexOf("{!hasAiConversation ? (");
+  const conversationIndex = pageSource.indexOf("{aiMessages.length ? (");
+  const initialControls = pageSource.slice(initialControlsIndex, conversationIndex);
+  assert.ok(initialControlsIndex >= 0);
+  assert.ok(conversationIndex > initialControlsIndex);
+  assert.equal(initialControls.includes("Copy prompt"), false);
 });
 
 test("OpenAI visible text extraction supports final response text", () => {

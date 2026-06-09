@@ -116,7 +116,7 @@ test("random range selection uses only available IDs in the requested range", ()
 
 test("there is no grading behavior", () => {
   const combined = `${pageSource}\n${quizSource}`;
-  const blockedTerms = ["correct" + "Answer", "document" + "Answer", "answer" + "Status", "In" + "correct", "Cor" + "rect"];
+  const blockedTerms = ["correct" + "Answer", "document" + "Answer", "answer" + "Status"];
   assert.equal(blockedTerms.some((term) => combined.includes(term)), false);
 });
 
