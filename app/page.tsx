@@ -14,7 +14,7 @@ import {
   shouldShowCommunityData,
   type ChoiceKey,
 } from "../lib/quiz";
-import { getProgressResult } from "../lib/progress";
+import { getProgressResult, type ProgressResult } from "../lib/progress";
 import { createClient } from "../lib/supabase/client";
 
 const questions = normalizeQuestions(questionsData);
@@ -103,6 +103,7 @@ export default function Home() {
   const [rangeMin, setRangeMin] = useState(String(firstQuestion.id));
   const [rangeMax, setRangeMax] = useState(String(lastQuestion.id));
   const [selectedChoice, setSelectedChoice] = useState<ChoiceKey | null>(null);
+  const [currentProgressResult, setCurrentProgressResult] = useState<ProgressResult | null>(null);
   const [message, setMessage] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
   const [modelProvider, setModelProvider] = useState<ModelProvider>("gemini");
@@ -221,6 +222,7 @@ export default function Home() {
     setCurrentId(questionId);
     setNumberInput(String(questionId));
     setSelectedChoice(null);
+    setCurrentProgressResult(null);
     setMessage("");
     setCustomPrompt("");
     setFollowUpPrompt("");
@@ -231,6 +233,8 @@ export default function Home() {
 
   async function saveAnswerProgress(answer: ChoiceKey) {
     setSelectedChoice(answer);
+    const result = getProgressResult(currentQuestion, answer);
+    setCurrentProgressResult(result);
     if (!userId) return;
 
     const supabase = createClient();
@@ -239,7 +243,6 @@ export default function Home() {
       return;
     }
 
-    const result = getProgressResult(currentQuestion, answer);
     const answeredAt = new Date().toISOString();
     const row = {
       user_id: userId,
@@ -259,6 +262,41 @@ export default function Home() {
       return;
     }
 
+  }
+
+  async function overrideProgressResult(result: Extract<ProgressResult, "correct" | "incorrect">) {
+    if (!selectedChoice || !userId) return;
+
+    const supabase = createClient();
+    if (!supabase) {
+      setSupabaseError("Supabase is not configured.");
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    const row = {
+      user_id: userId,
+      question_id: currentQuestion.id,
+      selected_answer: selectedChoice,
+      result,
+      updated_at: updatedAt,
+    };
+
+    setSavingProgress(true);
+    const { error } = await supabase.from("question_progress").upsert(row, { onConflict: "user_id,question_id" });
+    setSavingProgress(false);
+
+    if (error) {
+      setSupabaseError(error.message);
+      return;
+    }
+
+    setCurrentProgressResult(result);
+  }
+
+  function resultText(result: ProgressResult) {
+    if (result === "ungraded") return "Ungraded because no community voting data is available.";
+    return result === "correct" ? "Correct according to community voting." : "Incorrect according to community voting.";
   }
 
   async function toggleBookmark(questionId = currentQuestion.id) {
@@ -638,6 +676,28 @@ export default function Home() {
             })}
           </div>
           {savingProgress ? <p className="mt-3 text-sm text-teal-700">Saving progress...</p> : null}
+          {currentProgressResult ? (
+            <div className={`mt-4 grid gap-3 rounded border p-3 text-sm ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
+              <p className={theme === "dark" ? "text-stone-200" : "text-stone-700"}>{resultText(currentProgressResult)}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={theme === "dark" ? "text-stone-300" : "text-stone-600"}>Override result:</span>
+                <button
+                  className="rounded bg-emerald-700 px-3 py-2 text-sm font-semibold text-white disabled:bg-stone-400"
+                  disabled={savingProgress}
+                  onClick={() => overrideProgressResult("correct")}
+                >
+                  Mark correct
+                </button>
+                <button
+                  className="rounded bg-red-700 px-3 py-2 text-sm font-semibold text-white disabled:bg-stone-400"
+                  disabled={savingProgress}
+                  onClick={() => overrideProgressResult("incorrect")}
+                >
+                  Mark incorrect
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-5 flex justify-between gap-2">
             <button

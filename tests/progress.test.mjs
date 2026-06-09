@@ -97,6 +97,28 @@ test("profile page consolidates account dashboard and bookmarks", () => {
   assert.equal(pageSource.includes("href=\"/profile\""), true);
 });
 
+test("profile dashboard shows color-coded question links in selected range", () => {
+  assert.equal(profileSource.includes("Questions in selected range"), true);
+  assert.equal(profileSource.includes("getQuestionsInMetricsRange"), true);
+  assert.equal(profileSource.includes("progressByQuestionId"), true);
+  assert.equal(profileSource.includes("questionStatusClass"), true);
+  assert.equal(profileSource.includes("href={`/?question=${question.id}`"), true);
+  assert.equal(profileSource.includes("Correct"), true);
+  assert.equal(profileSource.includes("Incorrect"), true);
+  assert.equal(profileSource.includes("Unanswered"), true);
+});
+
+test("quiz shows community result and supports manual correct or incorrect override", () => {
+  assert.equal(pageSource.includes("currentProgressResult"), true);
+  assert.equal(pageSource.includes("Correct according to community voting."), true);
+  assert.equal(pageSource.includes("Incorrect according to community voting."), true);
+  assert.equal(pageSource.includes("Override result:"), true);
+  assert.equal(pageSource.includes("Mark correct"), true);
+  assert.equal(pageSource.includes("Mark incorrect"), true);
+  assert.equal(pageSource.includes("overrideProgressResult(\"correct\")"), true);
+  assert.equal(pageSource.includes("overrideProgressResult(\"incorrect\")"), true);
+});
+
 test("unauthenticated users are redirected", () => {
   assert.equal(middlewareSource.includes("/auth/sign-in"), true);
   assert.equal(middlewareSource.includes("NextResponse.redirect"), true);

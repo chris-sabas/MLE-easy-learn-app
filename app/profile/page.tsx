@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import questionsData from "../data/questions.json";
-import { calculateMetrics, type ProgressRecord } from "../../lib/progress";
+import { calculateMetrics, getQuestionsInMetricsRange, type ProgressRecord, type ProgressResult } from "../../lib/progress";
 import { collapseWhitespace, findQuestionById, normalizeQuestions } from "../../lib/quiz";
 import { createClient } from "../../lib/supabase/client";
 
@@ -17,6 +17,13 @@ type ProfileState = {
   metrics_range_start: number;
   metrics_range_end: number;
 };
+
+function questionStatusClass(status: ProgressResult | "unanswered", theme: Theme) {
+  if (status === "correct") return theme === "dark" ? "border-emerald-600 bg-emerald-950 text-emerald-100" : "border-emerald-300 bg-emerald-50 text-emerald-900";
+  if (status === "incorrect") return theme === "dark" ? "border-red-600 bg-red-950 text-red-100" : "border-red-300 bg-red-50 text-red-900";
+  if (status === "ungraded") return theme === "dark" ? "border-amber-600 bg-amber-950 text-amber-100" : "border-amber-300 bg-amber-50 text-amber-900";
+  return theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-300 bg-white text-stone-700";
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -36,6 +43,14 @@ export default function ProfilePage() {
   const metrics = useMemo(
     () => calculateMetrics(questions, progress, Number(metricsStart), Number(metricsEnd)),
     [metricsEnd, metricsStart, progress],
+  );
+  const progressByQuestionId = useMemo(
+    () => new Map(progress.map((record) => [record.question_id, record])),
+    [progress],
+  );
+  const questionsInSelectedRange = useMemo(
+    () => getQuestionsInMetricsRange(questions, Number(metricsStart), Number(metricsEnd)),
+    [metricsEnd, metricsStart],
   );
 
   useEffect(() => {
@@ -235,6 +250,36 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+          </div>
+          <div className="grid gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Questions in selected range</h3>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className={`rounded border px-2 py-1 ${questionStatusClass("correct", theme)}`}>Correct</span>
+                <span className={`rounded border px-2 py-1 ${questionStatusClass("incorrect", theme)}`}>Incorrect</span>
+                <span className={`rounded border px-2 py-1 ${questionStatusClass("ungraded", theme)}`}>Ungraded</span>
+                <span className={`rounded border px-2 py-1 ${questionStatusClass("unanswered", theme)}`}>Unanswered</span>
+              </div>
+            </div>
+            {questionsInSelectedRange.length ? (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-2">
+                {questionsInSelectedRange.map((question) => {
+                  const status = progressByQuestionId.get(question.id)?.result ?? "unanswered";
+                  return (
+                    <Link
+                      key={question.id}
+                      className={`rounded border px-2 py-2 text-center text-sm font-semibold ${questionStatusClass(status, theme)}`}
+                      href={`/?question=${question.id}`}
+                      title={`Question #${question.id}: ${status}`}
+                    >
+                      {question.id}
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>No questions exist in this range.</p>
+            )}
           </div>
         </section>
 
