@@ -25,6 +25,13 @@ type AiMode = "explain" | "custom" | "followup" | "general";
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type BookmarkRecord = { question_id: number; created_at: string };
 type CachedExplanationRecord = { explanation: string };
+type AskedQuestionRecord = {
+  id: string;
+  question_id: number | null;
+  user_message: string;
+  answer: string;
+  created_at: string;
+};
 type ProfileState = {
   username: string;
   last_question_id: number | null;
@@ -35,6 +42,13 @@ const AI_MODEL_IDS: Record<ModelProvider, string> = {
   openai: "gpt-5.5",
   gemini: "gemini-3.5-flash",
 };
+
+function questionStatusClass(status: ProgressResult | "unanswered", theme: Theme) {
+  if (status === "correct") return theme === "dark" ? "border-emerald-600 bg-emerald-950 text-emerald-100" : "border-emerald-300 bg-emerald-50 text-emerald-900";
+  if (status === "incorrect") return theme === "dark" ? "border-red-600 bg-red-950 text-red-100" : "border-red-300 bg-red-50 text-red-900";
+  if (status === "ungraded") return theme === "dark" ? "border-amber-600 bg-amber-950 text-amber-100" : "border-amber-300 bg-amber-50 text-amber-900";
+  return theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-300 bg-white text-stone-700";
+}
 
 function renderInlineMarkdown(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
@@ -49,6 +63,7 @@ function renderMarkdown(content: string, theme: Theme) {
   const lines = content.split(/\r?\n/);
   const elements: ReactNode[] = [];
   let bullets: string[] = [];
+  let tableRows: string[][] = [];
 
   function flushBullets() {
     if (!bullets.length) return;
@@ -62,12 +77,62 @@ function renderMarkdown(content: string, theme: Theme) {
     bullets = [];
   }
 
+  function flushTable() {
+    if (!tableRows.length) return;
+    const [header, ...body] = tableRows;
+    elements.push(
+      <div key={`table-${elements.length}`} className="max-w-full overflow-x-auto">
+        <table className={`w-full min-w-max border-collapse text-left text-sm ${theme === "dark" ? "text-stone-100" : "text-stone-800"}`}>
+          <thead>
+            <tr>
+              {header.map((cell, index) => (
+                <th key={index} className={`border px-2 py-1 font-semibold ${theme === "dark" ? "border-stone-700 bg-stone-800" : "border-stone-300 bg-stone-100"}`}>
+                  {renderInlineMarkdown(cell)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {body.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                {row.map((cell, cellIndex) => (
+                  <td key={cellIndex} className={`border px-2 py-1 align-top ${theme === "dark" ? "border-stone-700" : "border-stone-300"}`}>
+                    {renderInlineMarkdown(cell)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>,
+    );
+    tableRows = [];
+  }
+
+  function parseTableRow(line: string) {
+    return line.replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+  }
+
   lines.forEach((rawLine, index) => {
     const line = rawLine.trim();
     if (!line) {
       flushBullets();
+      flushTable();
       return;
     }
+    if (line.includes("|") && index + 1 < lines.length && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1])) {
+      flushBullets();
+      tableRows = [parseTableRow(line)];
+      return;
+    }
+    if (/^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line)) {
+      return;
+    }
+    if (tableRows.length && line.includes("|")) {
+      tableRows.push(parseTableRow(line));
+      return;
+    }
+    flushTable();
     if (line.startsWith("- ") || line.startsWith("* ")) {
       bullets.push(line.slice(2));
       return;
@@ -98,6 +163,7 @@ function renderMarkdown(content: string, theme: Theme) {
   });
 
   flushBullets();
+  flushTable();
   return elements;
 }
 
@@ -112,7 +178,7 @@ export default function Home() {
   const [currentProgressResult, setCurrentProgressResult] = useState<ProgressResult | null>(null);
   const [message, setMessage] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
-  const [modelProvider, setModelProvider] = useState<ModelProvider>("openai");
+  const [modelProvider, setModelProvider] = useState<ModelProvider>("gemini");
   const [customPrompt, setCustomPrompt] = useState("");
   const [followUpPrompt, setFollowUpPrompt] = useState("");
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
@@ -120,6 +186,9 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
   const [cachedExplanation, setCachedExplanation] = useState("");
   const [cacheLoading, setCacheLoading] = useState(false);
+  const [askedQuestions, setAskedQuestions] = useState<AskedQuestionRecord[]>([]);
+  const [activeAskedQuestionId, setActiveAskedQuestionId] = useState<string | null>(null);
+  const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileState | null>(null);
@@ -142,6 +211,15 @@ export default function Home() {
   const progressByQuestionId = useMemo(() => new Map(progress.map((record) => [record.question_id, record])), [progress]);
   const recommendedRangeStart = profile?.metrics_range_start ?? firstQuestion.id;
   const recommendedRangeEnd = profile?.metrics_range_end ?? lastQuestion.id;
+
+  const expandedTopicQuestions = useMemo(
+    () => expandedTopic ? sortedQuestions.filter((question) => question.tags.some((tag) => tag === expandedTopic)) : [],
+    [expandedTopic, sortedQuestions],
+  );
+
+  useEffect(() => {
+    if (!hasAiConversation) setModelProvider(selectedChoice ? "openai" : "gemini");
+  }, [hasAiConversation, selectedChoice]);
 
   useEffect(() => {
     const saved = localStorage.getItem("quiz-theme");
@@ -182,16 +260,22 @@ export default function Home() {
 
       setUserId(user.id);
 
-      const [{ data: profileData, error: profileError }, { data: bookmarkData, error: bookmarkError }, { data: progressData, error: progressError }] =
+      const [
+        { data: profileData, error: profileError },
+        { data: bookmarkData, error: bookmarkError },
+        { data: progressData, error: progressError },
+        { data: historyData, error: historyError },
+      ] =
         await Promise.all([
           supabase.from("profiles").select("username,last_question_id,metrics_range_start,metrics_range_end").eq("id", user.id).single(),
           supabase.from("bookmarks").select("question_id,created_at").eq("user_id", user.id),
           supabase.from("question_progress").select("question_id,selected_answer,result,answered_at").eq("user_id", user.id),
+          supabase.from("ai_question_history").select("id,question_id,user_message,answer,created_at").order("created_at", { ascending: false }).limit(12),
         ]);
 
       if (cancelled) return;
 
-      const firstError = profileError ?? bookmarkError ?? progressError;
+      const firstError = profileError ?? bookmarkError ?? progressError ?? historyError;
       if (firstError) {
         setSupabaseError(firstError.message);
       }
@@ -210,6 +294,7 @@ export default function Home() {
 
       setBookmarks((bookmarkData ?? []) as BookmarkRecord[]);
       setProgress((progressData ?? []) as ProgressRecord[]);
+      setAskedQuestions((historyData ?? []) as AskedQuestionRecord[]);
       setSessionLoading(false);
     }
 
@@ -244,6 +329,8 @@ export default function Home() {
     setAiMessages([]);
     setAiError("");
     setCachedExplanation("");
+    setActiveAskedQuestionId(null);
+    setExpandedTopic(null);
     setCopyMessage("");
   }
 
@@ -289,6 +376,12 @@ export default function Home() {
 
   async function saveAnswerProgress(answer: ChoiceKey) {
     setSelectedChoice(answer);
+    setAiMessages([]);
+    setAiError("");
+    setCustomPrompt("");
+    setFollowUpPrompt("");
+    setActiveAskedQuestionId(null);
+    setModelProvider("openai");
     const result = getProgressResult(currentQuestion, answer);
     setCurrentProgressResult(result);
     if (!userId) return;
@@ -454,6 +547,7 @@ export default function Home() {
       setAiMessages([{ role: "assistant", content: cachedExplanation }]);
       setCustomPrompt("");
       setFollowUpPrompt("");
+      setActiveAskedQuestionId(null);
       return;
     }
 
@@ -504,13 +598,85 @@ export default function Home() {
 
       if (mode === "explain" && data.message) setCachedExplanation(data.message);
       setAiMessages([...nextMessages, { role: "assistant", content: data.message ?? "" }]);
+      if ((mode === "custom" || mode === "general" || mode === "followup") && userMessage && data.message) {
+        setAskedQuestions((items) => [
+          {
+            id: `${Date.now()}-${currentQuestion.id}`,
+            question_id: mode === "general" ? null : currentQuestion.id,
+            user_message: userMessage,
+            answer: data.message ?? "",
+            created_at: new Date().toISOString(),
+          },
+          ...items,
+        ].slice(0, 12));
+      }
       setCustomPrompt("");
       setFollowUpPrompt("");
+      setActiveAskedQuestionId(null);
     } catch (error) {
       setAiError(error instanceof Error ? error.message : "AI request failed.");
     } finally {
       setAiLoading(false);
     }
+  }
+
+  function viewAskedQuestion(item: AskedQuestionRecord) {
+    setAiError("");
+    if (activeAskedQuestionId === item.id) {
+      setActiveAskedQuestionId(null);
+      setAiMessages([]);
+      setFollowUpPrompt("");
+      return;
+    }
+    setActiveAskedQuestionId(item.id);
+    setAiMessages([
+      { role: "user", content: item.user_message },
+      { role: "assistant", content: item.answer },
+    ]);
+  }
+
+  function renderExplainQuestionSection() {
+    if (!selectedChoice) return null;
+
+    return (
+      <section className={`grid gap-3 rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className={`text-base font-semibold ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>Explain question</h2>
+            <p className={`mt-1 text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Use the selected answer and current question context.</p>
+          </div>
+          <label className="flex flex-col gap-1 text-sm">
+            <span className={theme === "dark" ? "text-stone-300" : "text-stone-700"}>Model</span>
+            <select
+              className={`rounded border px-3 py-2 ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-100" : "border-stone-300 bg-white text-stone-900"}`}
+              value={modelProvider}
+              onChange={(event) => setModelProvider(event.target.value as ModelProvider)}
+              disabled={aiLoading}
+            >
+              <option value="openai">GPT 5.5</option>
+              <option value="gemini">Gemini 3.5 Flash</option>
+            </select>
+          </label>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-400"
+            disabled={aiLoading}
+            onClick={() => askAi("explain")}
+          >
+            {aiLoading ? "Asking..." : cacheLoading ? "Checking cache..." : cachedExplanation ? "View cached explanation" : "Explain this question"}
+          </button>
+          <button
+            className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
+            type="button"
+            onClick={copyPrompt}
+          >
+            Copy prompt
+          </button>
+        </div>
+        {copyMessage ? <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>{copyMessage}</p> : null}
+      </section>
+    );
   }
 
   function renderAiHelpSection() {
@@ -519,7 +685,6 @@ export default function Home() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className={`text-base font-semibold ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>AI help</h2>
-            <p className={`mt-1 text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>AI calls may cost API credits.</p>
           </div>
           <label className="flex flex-col gap-1 text-sm">
             <span className={theme === "dark" ? "text-stone-300" : "text-stone-700"}>Model</span>
@@ -537,28 +702,11 @@ export default function Home() {
 
         {!hasAiConversation ? (
           <div className="grid gap-3">
-            {selectedChoice ? (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-400"
-                  disabled={aiLoading}
-                  onClick={() => askAi("explain")}
-                >
-                  {aiLoading ? "Asking..." : cacheLoading ? "Checking cache..." : cachedExplanation ? "View cached explanation" : "Explain this question"}
-                </button>
-                <button
-                  className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
-                  type="button"
-                  onClick={copyPrompt}
-                >
-                  Copy prompt
-                </button>
-              </div>
-            ) : (
+            {!selectedChoice ? (
               <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
                 Before you answer, ask general study questions only. The AI will not receive the quiz context yet.
               </p>
-            )}
+            ) : null}
 
             <div className="grid gap-2">
               <label className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`} htmlFor="custom-ai-question">
@@ -587,6 +735,35 @@ export default function Home() {
         ) : null}
 
         {aiError ? <p className="text-sm text-red-700">{aiError}</p> : null}
+
+        {askedQuestions.length && !selectedChoice ? (
+          <div className={`grid gap-2 rounded border p-3 ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
+            <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Previously asked questions</h3>
+            <div className="grid gap-2">
+              {askedQuestions.map((item) => (
+                <button
+                  key={item.id}
+                  className={`rounded border px-3 py-2 text-left text-sm ${
+                    activeAskedQuestionId === item.id
+                      ? theme === "dark"
+                        ? "border-teal-500 bg-stone-800 text-stone-100"
+                        : "border-teal-700 bg-teal-50 text-stone-900"
+                      : theme === "dark"
+                        ? "border-stone-700 bg-stone-900 text-stone-100 hover:bg-stone-800"
+                        : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50"
+                  }`}
+                  type="button"
+                  onClick={() => viewAskedQuestion(item)}
+                >
+                  <span className="block font-medium">{item.user_message}</span>
+                  <span className={`mt-1 block text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>
+                    {item.question_id ? `Question #${item.question_id}` : "General question"} · {new Date(item.created_at).toLocaleDateString()}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {aiMessages.length ? (
           <div className={`grid max-w-full gap-3 overflow-visible rounded border p-3 ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
@@ -739,19 +916,6 @@ export default function Home() {
             </button>
           </div>
 
-          {currentQuestion.tags.length ? (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {currentQuestion.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className={`rounded border px-2 py-1 text-xs font-medium ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-200 bg-stone-50 text-stone-700"}`}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
           {currentQuestion.hasImage && questionImages.length === 0 ? (
             <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
               This question includes an image from the source document that is not currently displayed.
@@ -821,6 +985,43 @@ export default function Home() {
             </div>
           ) : null}
 
+          {currentQuestion.tags.length ? (
+            <div className="mt-4 grid gap-3">
+              <div className="flex flex-wrap gap-2">
+                {currentQuestion.tags.map((tag) => (
+                  <button
+                    key={tag}
+                    className={`rounded border px-2 py-1 text-xs font-medium ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-200 bg-stone-50 text-stone-700"}`}
+                    type="button"
+                    onClick={() => setExpandedTopic(expandedTopic === tag ? null : tag)}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              {expandedTopic ? (
+                <div className={`rounded border p-3 ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
+                  <p className={`mb-2 text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>{expandedTopic}</p>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-2">
+                    {expandedTopicQuestions.map((question) => {
+                      const status = progressByQuestionId.get(question.id)?.result ?? "unanswered";
+                      return (
+                        <Link
+                          key={`${expandedTopic}-${question.id}`}
+                          className={`rounded border px-2 py-2 text-center text-sm font-semibold ${questionStatusClass(status, theme)}`}
+                          href={`/?question=${question.id}`}
+                          title={`Question #${question.id}: ${status}`}
+                        >
+                          {question.id}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="mt-5 flex justify-between gap-2">
             <button
               className={`rounded border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${theme === "dark" ? "border-stone-700" : "border-stone-300"}`}
@@ -865,6 +1066,7 @@ export default function Home() {
               )}
             </div>
 
+            {renderExplainQuestionSection()}
             {renderAiHelpSection()}
 
             <div>

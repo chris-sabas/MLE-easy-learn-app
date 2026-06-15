@@ -203,6 +203,9 @@ test("all questions have recognized study tags", () => {
     }
   }
   assert.equal(pageSource.includes("currentQuestion.tags.map"), true);
+  assert.equal(pageSource.includes("expandedTopicQuestions.map"), true);
+  assert.equal(pageSource.includes("setExpandedTopic(expandedTopic === tag ? null : tag)"), true);
+  assert.ok(pageSource.indexOf("choiceEntries(currentQuestion).map") < pageSource.indexOf("currentQuestion.tags.map"));
 });
 
 test("all questions include local study explanations", () => {

@@ -5,7 +5,7 @@ const OPENAI_MODEL = "gpt-5.5";
 const GEMINI_MODEL = "gemini-3.5-flash";
 const MAX_USER_MESSAGE_LENGTH = 800;
 const MAX_HISTORY_MESSAGES = 6;
-const MAX_OUTPUT_TOKENS = 900;
+const MAX_OUTPUT_TOKENS = 1_400;
 const GEMINI_THINKING_BUDGET = 512;
 
 type ModelProvider = "openai" | "gemini";
@@ -118,7 +118,7 @@ function buildUserMessage(body: Required<Pick<AiRequestBody, "mode">> & AiReques
 }
 
 function buildGeneralUserMessage(userMessage: string) {
-  return `${userMessage}\n\nThe user has not submitted an answer yet. Do not ask for or infer the current quiz answer. Give general study guidance only, and avoid revealing the answer to any specific question.`;
+  return `You are a study assistant for ML/Google Cloud certification-style practice questions.\n\n${userMessage}`;
 }
 
 function textFromContentParts(value: unknown): string {
@@ -273,6 +273,30 @@ async function saveCachedExplanation(questionId: number, provider: ModelProvider
   );
 }
 
+async function saveAskedQuestion(body: AiRequestBody, question: AiQuestion | null, answer: string) {
+  if (body.mode !== "custom" && body.mode !== "followup" && body.mode !== "general") return;
+  if (body.modelProvider !== "openai" && body.modelProvider !== "gemini") return;
+  if (!body.userMessage?.trim()) return;
+
+  const supabase = await createClient();
+  if (!supabase) return;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("ai_question_history").insert({
+    question_id: question?.id ?? null,
+    model_provider: body.modelProvider,
+    model_id: modelIdForProvider(body.modelProvider),
+    mode: body.mode,
+    user_message: body.userMessage.trim(),
+    answer,
+    created_by: user.id,
+  });
+}
+
 export async function POST(request: Request) {
   let body: AiRequestBody;
   try {
@@ -322,6 +346,7 @@ export async function POST(request: Request) {
   if (body.mode === "explain" && question) {
     await saveCachedExplanation(question.id, body.modelProvider, result.text);
   }
+  await saveAskedQuestion(body, question, result.text);
 
   return NextResponse.json({ message: result.text, cached: false, historyUsed: history.length });
 }

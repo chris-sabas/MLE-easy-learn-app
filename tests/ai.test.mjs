@@ -48,6 +48,28 @@ test("Explain checks and saves Supabase cached explanations", () => {
   assert.equal(routeSource.includes("cached: false"), true);
 });
 
+test("Typed AI questions are saved and shown as shared history", () => {
+  assert.equal(cacheMigration.includes("create table public.ai_question_history"), true);
+  assert.equal(cacheMigration.includes("ai_question_history_select_authenticated"), true);
+  assert.equal(routeSource.includes("saveAskedQuestion(body, question, result.text)"), true);
+  assert.equal(routeSource.includes("ai_question_history"), true);
+  assert.equal(pageSource.includes("Previously asked questions"), true);
+  assert.equal(pageSource.includes("viewAskedQuestion(item)"), true);
+  assert.equal(pageSource.includes("activeAskedQuestionId === item.id"), true);
+  assert.equal(pageSource.includes("setAskedQuestions"), true);
+});
+
+test("clicking the same saved AI question closes the viewed answer", () => {
+  const viewIndex = pageSource.indexOf("function viewAskedQuestion");
+  const nextFunctionIndex = pageSource.indexOf("function renderExplainQuestionSection", viewIndex);
+  const viewSource = pageSource.slice(viewIndex, nextFunctionIndex);
+  assert.ok(viewIndex >= 0);
+  assert.equal(viewSource.includes("activeAskedQuestionId === item.id"), true);
+  assert.equal(viewSource.includes("setActiveAskedQuestionId(null)"), true);
+  assert.equal(viewSource.includes("setAiMessages([])"), true);
+  assert.equal(viewSource.includes("return;"), true);
+});
+
 test("Explain button can view cached explanation before generating", () => {
   assert.equal(pageSource.includes("ai_explanation_cache"), true);
   assert.equal(pageSource.includes("AI_MODEL_IDS"), true);
@@ -67,11 +89,19 @@ test("chat resets when question changes", () => {
   assert.equal(pageSource.includes("resetForQuestion(next.id)"), true);
 });
 
+test("answering clears pre-answer AI chat and hides previous questions", () => {
+  assert.equal(pageSource.includes("async function saveAnswerProgress"), true);
+  assert.equal(pageSource.includes("setAiMessages([])"), true);
+  assert.equal(pageSource.includes("askedQuestions.length && !selectedChoice"), true);
+});
+
 test("pre-answer AI asks general questions without quiz context", () => {
   assert.equal(pageSource.includes("Ask a general question"), true);
   assert.equal(pageSource.includes("The AI will not receive the quiz context yet."), true);
   assert.equal(pageSource.includes("const includeQuestionContext = selectedChoice !== null && mode !== \"general\""), true);
   assert.equal(routeSource.includes("buildGeneralUserMessage"), true);
+  assert.equal(routeSource.includes("You are a study assistant for ML/Google Cloud certification-style practice questions.\\n\\n${userMessage}"), true);
+  assert.equal(routeSource.includes("The user has not submitted an answer yet."), false);
 });
 
 test("initial custom controls disappear after conversation starts", () => {
@@ -83,6 +113,8 @@ test("AI answers render markdown-style content", () => {
   assert.equal(pageSource.includes("function renderMarkdown"), true);
   assert.equal(pageSource.includes("renderMarkdown(chatMessage.content, theme)"), true);
   assert.equal(pageSource.includes("renderInlineMarkdown"), true);
+  assert.equal(pageSource.includes("function flushTable"), true);
+  assert.equal(pageSource.includes("<table"), true);
 });
 
 test("manual prompt can be copied", () => {
@@ -107,21 +139,21 @@ test("copy prompt is hidden before an AI conversation starts", () => {
   assert.ok(initialControlsIndex >= 0);
   assert.ok(conversationIndex > initialControlsIndex);
   const preAnswerIndex = initialControls.indexOf("Ask a general question");
-  const explainIndex = initialControls.indexOf("Explain this question");
   assert.ok(preAnswerIndex >= 0);
-  assert.ok(explainIndex >= 0);
-  assert.equal(initialControls.slice(preAnswerIndex, explainIndex).includes("Copy prompt"), false);
+  assert.equal(initialControls.includes("Copy prompt"), false);
+  assert.equal(initialControls.includes("Explain this question"), false);
 });
 
-test("answered explain controls include context copy prompt before conversation starts", () => {
-  const initialControlsIndex = pageSource.indexOf("{!hasAiConversation ? (");
-  const conversationIndex = pageSource.indexOf("{aiMessages.length ? (");
-  const initialControls = pageSource.slice(initialControlsIndex, conversationIndex);
-  const explainIndex = initialControls.indexOf("Explain this question");
-  const customIndex = initialControls.indexOf("Ask custom question", explainIndex);
-  assert.ok(explainIndex >= 0);
-  assert.ok(customIndex > explainIndex);
-  assert.equal(initialControls.slice(explainIndex, customIndex).includes("Copy prompt"), true);
+test("answered explain controls are separated from custom AI help", () => {
+  const explainSectionIndex = pageSource.indexOf("function renderExplainQuestionSection");
+  const aiHelpSectionIndex = pageSource.indexOf("function renderAiHelpSection");
+  const explainSection = pageSource.slice(explainSectionIndex, aiHelpSectionIndex);
+  assert.ok(explainSectionIndex >= 0);
+  assert.ok(aiHelpSectionIndex > explainSectionIndex);
+  assert.equal(explainSection.includes("Explain question"), true);
+  assert.equal(explainSection.includes("Explain this question"), true);
+  assert.equal(explainSection.includes("Copy prompt"), true);
+  assert.equal(explainSection.includes("Ask custom question"), false);
 });
 
 test("OpenAI visible text extraction supports final response text", () => {
@@ -151,15 +183,17 @@ test("API response parsing excludes raw reasoning and thought fields", () => {
 test("provider prompt asks for concise 600-token answers", () => {
   assert.equal(routeSource.includes("Aim for about 600 visible tokens"), true);
   assert.equal(routeSource.includes("Finish the answer completely"), true);
-  assert.equal(routeSource.includes("MAX_OUTPUT_TOKENS = 900"), true);
+  assert.equal(routeSource.includes("MAX_OUTPUT_TOKENS = 1_400"), true);
   assert.equal(routeSource.includes("max_output_tokens: MAX_OUTPUT_TOKENS"), true);
   assert.equal(routeSource.includes("maxOutputTokens: MAX_OUTPUT_TOKENS"), true);
   assert.equal(routeSource.includes("GEMINI_THINKING_BUDGET = 512"), true);
   assert.equal(routeSource.includes("thinkingConfig: { thinkingBudget: GEMINI_THINKING_BUDGET }"), true);
 });
 
-test("GPT is the default AI provider", () => {
-  assert.equal(pageSource.includes("useState<ModelProvider>(\"openai\")"), true);
+test("Gemini is the pre-answer default and GPT is the post-answer default", () => {
+  assert.equal(pageSource.includes("useState<ModelProvider>(\"gemini\")"), true);
+  assert.equal(pageSource.includes("setModelProvider(selectedChoice ? \"openai\" : \"gemini\")"), true);
+  assert.equal(pageSource.includes("setModelProvider(\"openai\")"), true);
 });
 
 test("public header avoids local question count", () => {
@@ -172,12 +206,14 @@ test("external copy prompt is optimized for accuracy with disclaimer", () => {
   assert.equal(pageSource.includes("not to minimize token usage"), true);
 });
 
-test("AI help is rendered after votes and before comments once answered", () => {
+test("post-answer explain and AI help render after votes and before comments", () => {
   const votesIndex = pageSource.indexOf("Community vote distribution");
-  const aiIndex = pageSource.indexOf("{renderAiHelpSection()}", votesIndex);
+  const explainIndex = pageSource.indexOf("{renderExplainQuestionSection()}", votesIndex);
+  const aiIndex = pageSource.indexOf("{renderAiHelpSection()}", explainIndex);
   const commentsIndex = pageSource.indexOf(">Comments</h2>", votesIndex);
   assert.ok(votesIndex >= 0);
-  assert.ok(aiIndex > votesIndex);
+  assert.ok(explainIndex > votesIndex);
+  assert.ok(aiIndex > explainIndex);
   assert.ok(commentsIndex > aiIndex);
 });
 
