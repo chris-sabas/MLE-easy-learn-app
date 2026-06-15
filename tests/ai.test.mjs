@@ -61,7 +61,7 @@ test("Typed AI questions are saved and shown as shared history", () => {
 
 test("clicking the same saved AI question closes the viewed answer", () => {
   const viewIndex = pageSource.indexOf("function viewAskedQuestion");
-  const nextFunctionIndex = pageSource.indexOf("function renderExplainQuestionSection", viewIndex);
+  const nextFunctionIndex = pageSource.indexOf("function renderAiHelpSection", viewIndex);
   const viewSource = pageSource.slice(viewIndex, nextFunctionIndex);
   assert.ok(viewIndex >= 0);
   assert.equal(viewSource.includes("activeAskedQuestionId === item.id"), true);
@@ -92,7 +92,8 @@ test("chat resets when question changes", () => {
 test("answering clears pre-answer AI chat and hides previous questions", () => {
   assert.equal(pageSource.includes("async function saveAnswerProgress"), true);
   assert.equal(pageSource.includes("setAiMessages([])"), true);
-  assert.equal(pageSource.includes("askedQuestions.length && !selectedChoice"), true);
+  assert.equal(pageSource.includes("visibleAskedQuestions"), true);
+  assert.equal(pageSource.includes("askedQuestions.filter((item) => item.question_id === currentQuestion.id || item.question_id === null)"), true);
 });
 
 test("pre-answer AI asks general questions without quiz context", () => {
@@ -132,28 +133,29 @@ test("copy prompt remains available in active conversation", () => {
   assert.ok(followUpIndex > copyIndex);
 });
 
-test("copy prompt is hidden before an AI conversation starts", () => {
+test("copy prompt is hidden before answering", () => {
   const initialControlsIndex = pageSource.indexOf("{!hasAiConversation ? (");
   const conversationIndex = pageSource.indexOf("{aiMessages.length ? (");
   const initialControls = pageSource.slice(initialControlsIndex, conversationIndex);
   assert.ok(initialControlsIndex >= 0);
   assert.ok(conversationIndex > initialControlsIndex);
   const preAnswerIndex = initialControls.indexOf("Ask a general question");
+  const answeredExplainIndex = initialControls.indexOf("Explain this question");
   assert.ok(preAnswerIndex >= 0);
-  assert.equal(initialControls.includes("Copy prompt"), false);
-  assert.equal(initialControls.includes("Explain this question"), false);
+  assert.ok(answeredExplainIndex >= 0);
+  assert.equal(initialControls.slice(preAnswerIndex, answeredExplainIndex).includes("Copy prompt"), false);
 });
 
-test("answered explain controls are separated from custom AI help", () => {
-  const explainSectionIndex = pageSource.indexOf("function renderExplainQuestionSection");
+test("answered explain controls share the AI help section with custom questions", () => {
   const aiHelpSectionIndex = pageSource.indexOf("function renderAiHelpSection");
-  const explainSection = pageSource.slice(explainSectionIndex, aiHelpSectionIndex);
-  assert.ok(explainSectionIndex >= 0);
-  assert.ok(aiHelpSectionIndex > explainSectionIndex);
-  assert.equal(explainSection.includes("Explain question"), true);
-  assert.equal(explainSection.includes("Explain this question"), true);
-  assert.equal(explainSection.includes("Copy prompt"), true);
-  assert.equal(explainSection.includes("Ask custom question"), false);
+  const aiHelpSection = pageSource.slice(aiHelpSectionIndex);
+  const explainIndex = aiHelpSection.indexOf("Explain this question");
+  const customIndex = aiHelpSection.indexOf("Ask custom question", explainIndex);
+  const historyIndex = aiHelpSection.indexOf("Previously asked questions", customIndex);
+  assert.ok(aiHelpSectionIndex >= 0);
+  assert.ok(explainIndex >= 0);
+  assert.ok(customIndex > explainIndex);
+  assert.ok(historyIndex > customIndex);
 });
 
 test("OpenAI visible text extraction supports final response text", () => {
@@ -206,14 +208,12 @@ test("external copy prompt is optimized for accuracy with disclaimer", () => {
   assert.equal(pageSource.includes("not to minimize token usage"), true);
 });
 
-test("post-answer explain and AI help render after votes and before comments", () => {
+test("post-answer AI help renders after votes and before comments", () => {
   const votesIndex = pageSource.indexOf("Community vote distribution");
-  const explainIndex = pageSource.indexOf("{renderExplainQuestionSection()}", votesIndex);
-  const aiIndex = pageSource.indexOf("{renderAiHelpSection()}", explainIndex);
+  const aiIndex = pageSource.indexOf("{renderAiHelpSection()}", votesIndex);
   const commentsIndex = pageSource.indexOf(">Comments</h2>", votesIndex);
   assert.ok(votesIndex >= 0);
-  assert.ok(explainIndex > votesIndex);
-  assert.ok(aiIndex > explainIndex);
+  assert.ok(aiIndex > votesIndex);
   assert.ok(commentsIndex > aiIndex);
 });
 

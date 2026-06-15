@@ -211,6 +211,9 @@ export default function Home() {
   const progressByQuestionId = useMemo(() => new Map(progress.map((record) => [record.question_id, record])), [progress]);
   const recommendedRangeStart = profile?.metrics_range_start ?? firstQuestion.id;
   const recommendedRangeEnd = profile?.metrics_range_end ?? lastQuestion.id;
+  const visibleAskedQuestions = selectedChoice
+    ? askedQuestions.filter((item) => item.question_id === currentQuestion.id || item.question_id === null)
+    : askedQuestions;
 
   const expandedTopicQuestions = useMemo(
     () => expandedTopic ? sortedQuestions.filter((question) => question.tags.some((tag) => tag === expandedTopic)) : [],
@@ -635,50 +638,6 @@ export default function Home() {
     ]);
   }
 
-  function renderExplainQuestionSection() {
-    if (!selectedChoice) return null;
-
-    return (
-      <section className={`grid gap-3 rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className={`text-base font-semibold ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>Explain question</h2>
-            <p className={`mt-1 text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Use the selected answer and current question context.</p>
-          </div>
-          <label className="flex flex-col gap-1 text-sm">
-            <span className={theme === "dark" ? "text-stone-300" : "text-stone-700"}>Model</span>
-            <select
-              className={`rounded border px-3 py-2 ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-100" : "border-stone-300 bg-white text-stone-900"}`}
-              value={modelProvider}
-              onChange={(event) => setModelProvider(event.target.value as ModelProvider)}
-              disabled={aiLoading}
-            >
-              <option value="openai">GPT 5.5</option>
-              <option value="gemini">Gemini 3.5 Flash</option>
-            </select>
-          </label>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-400"
-            disabled={aiLoading}
-            onClick={() => askAi("explain")}
-          >
-            {aiLoading ? "Asking..." : cacheLoading ? "Checking cache..." : cachedExplanation ? "View cached explanation" : "Explain this question"}
-          </button>
-          <button
-            className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
-            type="button"
-            onClick={copyPrompt}
-          >
-            Copy prompt
-          </button>
-        </div>
-        {copyMessage ? <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>{copyMessage}</p> : null}
-      </section>
-    );
-  }
-
   function renderAiHelpSection() {
     return (
       <section className={`grid gap-4 rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
@@ -702,6 +661,25 @@ export default function Home() {
 
         {!hasAiConversation ? (
           <div className="grid gap-3">
+            {selectedChoice ? (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-400"
+                  disabled={aiLoading}
+                  onClick={() => askAi("explain")}
+                >
+                  {aiLoading ? "Asking..." : cacheLoading ? "Checking cache..." : cachedExplanation ? "View cached explanation" : "Explain this question"}
+                </button>
+                <button
+                  className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
+                  type="button"
+                  onClick={copyPrompt}
+                >
+                  Copy prompt
+                </button>
+              </div>
+            ) : null}
+
             {!selectedChoice ? (
               <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
                 Before you answer, ask general study questions only. The AI will not receive the quiz context yet.
@@ -736,11 +714,11 @@ export default function Home() {
 
         {aiError ? <p className="text-sm text-red-700">{aiError}</p> : null}
 
-        {askedQuestions.length && !selectedChoice ? (
+        {visibleAskedQuestions.length ? (
           <div className={`grid gap-2 rounded border p-3 ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
             <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Previously asked questions</h3>
             <div className="grid gap-2">
-              {askedQuestions.map((item) => (
+              {visibleAskedQuestions.map((item) => (
                 <button
                   key={item.id}
                   className={`rounded border px-3 py-2 text-left text-sm ${
@@ -1066,7 +1044,6 @@ export default function Home() {
               )}
             </div>
 
-            {renderExplainQuestionSection()}
             {renderAiHelpSection()}
 
             <div>
