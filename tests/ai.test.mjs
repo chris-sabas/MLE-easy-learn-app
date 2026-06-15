@@ -151,11 +151,20 @@ test("answered explain controls share the AI help section with custom questions"
   const aiHelpSection = pageSource.slice(aiHelpSectionIndex);
   const explainIndex = aiHelpSection.indexOf("Explain this question");
   const customIndex = aiHelpSection.indexOf("Ask custom question", explainIndex);
-  const historyIndex = aiHelpSection.indexOf("Previously asked questions", customIndex);
+  const historyIndex = aiHelpSection.indexOf("renderAskedQuestionsSection()", customIndex);
   assert.ok(aiHelpSectionIndex >= 0);
   assert.ok(explainIndex >= 0);
   assert.ok(customIndex > explainIndex);
   assert.ok(historyIndex > customIndex);
+});
+
+test("previously asked questions render below active AI response", () => {
+  const aiHelpSectionIndex = pageSource.indexOf("function renderAiHelpSection");
+  const aiHelpSection = pageSource.slice(aiHelpSectionIndex);
+  const responseIndex = aiHelpSection.indexOf("{aiMessages.length ? (");
+  const historyIndex = aiHelpSection.indexOf("{renderAskedQuestionsSection()}", responseIndex);
+  assert.ok(responseIndex >= 0);
+  assert.ok(historyIndex > responseIndex);
 });
 
 test("OpenAI visible text extraction supports final response text", () => {

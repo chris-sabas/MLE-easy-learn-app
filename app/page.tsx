@@ -638,6 +638,39 @@ export default function Home() {
     ]);
   }
 
+  function renderAskedQuestionsSection() {
+    if (!visibleAskedQuestions.length) return null;
+
+    return (
+      <div className={`grid gap-2 rounded border p-3 ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
+        <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Previously asked questions</h3>
+        <div className="grid gap-2">
+          {visibleAskedQuestions.map((item) => (
+            <button
+              key={item.id}
+              className={`rounded border px-3 py-2 text-left text-sm ${
+                activeAskedQuestionId === item.id
+                  ? theme === "dark"
+                    ? "border-teal-500 bg-stone-800 text-stone-100"
+                    : "border-teal-700 bg-teal-50 text-stone-900"
+                  : theme === "dark"
+                    ? "border-stone-700 bg-stone-900 text-stone-100 hover:bg-stone-800"
+                    : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50"
+              }`}
+              type="button"
+              onClick={() => viewAskedQuestion(item)}
+            >
+              <span className="block font-medium">{item.user_message}</span>
+              <span className={`mt-1 block text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>
+                {item.question_id ? `Question #${item.question_id}` : "General question"} · {new Date(item.created_at).toLocaleDateString()}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   function renderAiHelpSection() {
     return (
       <section className={`grid gap-4 rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
@@ -714,7 +747,7 @@ export default function Home() {
 
         {aiError ? <p className="text-sm text-red-700">{aiError}</p> : null}
 
-        {visibleAskedQuestions.length ? (
+        {false && visibleAskedQuestions.length ? (
           <div className={`grid gap-2 rounded border p-3 ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-stone-50"}`}>
             <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Previously asked questions</h3>
             <div className="grid gap-2">
@@ -789,6 +822,8 @@ export default function Home() {
             </div>
           </div>
         ) : null}
+
+        {renderAskedQuestionsSection()}
       </section>
     );
   }
