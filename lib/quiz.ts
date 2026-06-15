@@ -6,12 +6,28 @@ export interface QuizComment {
   votes: number;
 }
 
+export type QuestionTag =
+  | "Data pipelines & processing"
+  | "BigQuery & analytics"
+  | "Vertex AI / AI Platform training"
+  | "AutoML & prebuilt ML APIs"
+  | "Deployment & serving"
+  | "Monitoring, evaluation & model quality"
+  | "Data preparation & feature engineering"
+  | "Algorithms & problem framing"
+  | "Deep learning & TensorFlow"
+  | "MLOps, CI/CD & orchestration"
+  | "Security, privacy & compliance"
+  | "Explainability & responsible AI";
+
 export interface QuizQuestion {
   id: number;
   question: string;
   choices: Partial<Record<ChoiceKey, string>>;
   voteDistribution: Partial<Record<ChoiceKey, number>>;
   comments: QuizComment[];
+  tags: QuestionTag[];
+  explanation: string;
   arnoutsComment: string;
   arnoutsAnswer: ChoiceKey | "";
   sourcePages?: number[];
@@ -20,6 +36,20 @@ export interface QuizQuestion {
 }
 
 const CHOICE_KEYS: ChoiceKey[] = ["A", "B", "C", "D", "E", "F"];
+const QUESTION_TAGS: QuestionTag[] = [
+  "Data pipelines & processing",
+  "BigQuery & analytics",
+  "Vertex AI / AI Platform training",
+  "AutoML & prebuilt ML APIs",
+  "Deployment & serving",
+  "Monitoring, evaluation & model quality",
+  "Data preparation & feature engineering",
+  "Algorithms & problem framing",
+  "Deep learning & TensorFlow",
+  "MLOps, CI/CD & orchestration",
+  "Security, privacy & compliance",
+  "Explainability & responsible AI",
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -90,6 +120,11 @@ function normalizeImages(value: unknown): string[] | undefined {
   return images.length ? images : [];
 }
 
+function normalizeTags(value: unknown): QuestionTag[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((tag): tag is QuestionTag => typeof tag === "string" && QUESTION_TAGS.includes(tag as QuestionTag));
+}
+
 export function normalizeQuestions(value: unknown): QuizQuestion[] {
   if (!Array.isArray(value)) {
     throw new Error("app/data/questions.json must export an array of questions.");
@@ -118,6 +153,8 @@ export function normalizeQuestions(value: unknown): QuizQuestion[] {
       choices: normalizeChoices(item.choices, id),
       voteDistribution: normalizeVoteDistribution(item.voteDistribution),
       comments: normalizeComments(item.comments),
+      tags: normalizeTags(item.tags),
+      explanation: typeof item.explanation === "string" ? item.explanation : "",
       arnoutsComment: typeof item.arnoutsComment === "string" ? item.arnoutsComment : "",
       arnoutsAnswer: typeof item.arnoutsAnswer === "string" && isChoiceKey(item.arnoutsAnswer) ? item.arnoutsAnswer : "",
       sourcePages: normalizeSourcePages(item.sourcePages),

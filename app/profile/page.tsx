@@ -39,6 +39,7 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [metricsStart, setMetricsStart] = useState("1");
   const [metricsEnd, setMetricsEnd] = useState("285");
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
 
   const metrics = useMemo(
     () => calculateMetrics(questions, progress, Number(metricsStart), Number(metricsEnd)),
@@ -52,6 +53,42 @@ export default function ProfilePage() {
     () => getQuestionsInMetricsRange(questions, Number(metricsStart), Number(metricsEnd)),
     [metricsEnd, metricsStart],
   );
+  const topicMetrics = useMemo(() => {
+    const byTopic = new Map<string, typeof questionsInSelectedRange>();
+    for (const question of questionsInSelectedRange) {
+      for (const tag of question.tags) {
+        byTopic.set(tag, [...(byTopic.get(tag) ?? []), question]);
+      }
+    }
+
+    return [...byTopic.entries()]
+      .map(([topic, topicQuestions]) => {
+        const counts = topicQuestions.reduce(
+          (accumulator, question) => {
+            const status = progressByQuestionId.get(question.id)?.result ?? "unanswered";
+            accumulator[status] += 1;
+            return accumulator;
+          },
+          { correct: 0, incorrect: 0, ungraded: 0, unanswered: 0 },
+        );
+        const total = topicQuestions.length;
+        const percent = (value: number) => (total ? Math.round((value / total) * 100) : 0);
+        return {
+          topic,
+          questions: topicQuestions,
+          total,
+          counts,
+          percentages: {
+            answered: percent(counts.correct + counts.incorrect + counts.ungraded),
+            correct: percent(counts.correct),
+            incorrect: percent(counts.incorrect),
+            ungraded: percent(counts.ungraded),
+            unanswered: percent(counts.unanswered),
+          },
+        };
+      })
+      .sort((a, b) => a.topic.localeCompare(b.topic));
+  }, [progressByQuestionId, questionsInSelectedRange]);
 
   useEffect(() => {
     const saved = localStorage.getItem("quiz-theme");
@@ -173,6 +210,18 @@ export default function ProfilePage() {
     setBookmarks((items) => items.filter((item) => item.question_id !== questionId));
   }
 
+  function toggleTopic(topic: string) {
+    setExpandedTopics((current) => {
+      const next = new Set(current);
+      if (next.has(topic)) {
+        next.delete(topic);
+      } else {
+        next.add(topic);
+      }
+      return next;
+    });
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-stone-100 px-4">
@@ -279,6 +328,85 @@ export default function ProfilePage() {
               </div>
             ) : (
               <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>No questions exist in this range.</p>
+            )}
+          </div>
+
+          <div className="grid gap-3">
+            <div>
+              <h3 className={`text-sm font-semibold ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Topic performance</h3>
+              <p className={`mt-1 text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Click a topic to view the matching question grid for the selected range.</p>
+            </div>
+            {topicMetrics.length ? (
+              <div className="grid gap-2">
+                {topicMetrics.map((item) => {
+                  const expanded = expandedTopics.has(item.topic);
+                  return (
+                    <div key={item.topic} className={`rounded border ${theme === "dark" ? "border-stone-700" : "border-stone-200"}`}>
+                      <button
+                        className={`grid w-full gap-3 px-3 py-3 text-left sm:grid-cols-[1fr_auto] sm:items-center ${theme === "dark" ? "hover:bg-stone-800" : "hover:bg-stone-50"}`}
+                        type="button"
+                        onClick={() => toggleTopic(item.topic)}
+                      >
+                        <span>
+                          <span className="block text-sm font-semibold">{item.topic}</span>
+                          <span className={`mt-1 block text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>{item.total} questions in range</span>
+                        </span>
+                        <span className="grid gap-1 text-xs sm:min-w-80">
+                          <span>
+                            <span className="mb-1 flex items-center justify-between gap-3">
+                              <span>Answered</span>
+                              <span className="font-semibold">{item.percentages.answered}%</span>
+                            </span>
+                            <span className={`flex h-2 overflow-hidden rounded border bg-white ${theme === "dark" ? "border-stone-700" : "border-stone-300"}`}>
+                              <span className="block h-full bg-emerald-600" style={{ width: `${item.percentages.correct}%` }} />
+                              <span className="block h-full bg-red-600" style={{ width: `${item.percentages.incorrect}%` }} />
+                              <span className="block h-full bg-amber-500" style={{ width: `${item.percentages.ungraded}%` }} />
+                              <span className="block h-full bg-white" style={{ width: `${item.percentages.unanswered}%` }} />
+                            </span>
+                          </span>
+                          <span className="flex items-center justify-between gap-3">
+                            <span>Correct</span>
+                            <span className="font-semibold">{item.percentages.correct}%</span>
+                          </span>
+                          <span className="flex items-center justify-between gap-3">
+                            <span>Incorrect</span>
+                            <span className="font-semibold">{item.percentages.incorrect}%</span>
+                          </span>
+                          <span className="flex items-center justify-between gap-3">
+                            <span>Ungraded</span>
+                            <span className="font-semibold">{item.percentages.ungraded}%</span>
+                          </span>
+                          <span className="flex items-center justify-between gap-3">
+                            <span>Unanswered</span>
+                            <span className="font-semibold">{item.percentages.unanswered}%</span>
+                          </span>
+                        </span>
+                      </button>
+                      {expanded ? (
+                        <div className={`border-t p-3 ${theme === "dark" ? "border-stone-700" : "border-stone-200"}`}>
+                          <div className="grid grid-cols-[repeat(auto-fill,minmax(3.25rem,1fr))] gap-2">
+                            {item.questions.map((question) => {
+                              const status = progressByQuestionId.get(question.id)?.result ?? "unanswered";
+                              return (
+                                <Link
+                                  key={`${item.topic}-${question.id}`}
+                                  className={`rounded border px-2 py-2 text-center text-sm font-semibold ${questionStatusClass(status, theme)}`}
+                                  href={`/?question=${question.id}`}
+                                  title={`Question #${question.id}: ${status}`}
+                                >
+                                  {question.id}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>No tagged questions exist in this range.</p>
             )}
           </div>
         </section>

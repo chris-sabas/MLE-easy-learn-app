@@ -7,6 +7,20 @@ const pageSource = readFileSync(new URL("../app/page.tsx", import.meta.url), "ut
 const quizSource = readFileSync(new URL("../lib/quiz.ts", import.meta.url), "utf8");
 
 const choiceKeys = ["A", "B", "C", "D", "E", "F"];
+const questionTags = [
+  "Data pipelines & processing",
+  "BigQuery & analytics",
+  "Vertex AI / AI Platform training",
+  "AutoML & prebuilt ML APIs",
+  "Deployment & serving",
+  "Monitoring, evaluation & model quality",
+  "Data preparation & feature engineering",
+  "Algorithms & problem framing",
+  "Deep learning & TensorFlow",
+  "MLOps, CI/CD & orchestration",
+  "Security, privacy & compliance",
+  "Explainability & responsible AI",
+];
 
 function normalizeQuestions(items) {
   const seen = new Set();
@@ -16,6 +30,8 @@ function normalizeQuestions(items) {
       assert.equal(typeof question.question, "string");
       assert.ok(question.question.length > 0);
       assert.ok(question.choices && Object.keys(question.choices).length > 0);
+      if ("tags" in question) assert.ok(Array.isArray(question.tags));
+      if ("explanation" in question) assert.equal(typeof question.explanation, "string");
       assert.equal(seen.has(question.id), false, `duplicate id ${question.id}`);
       seen.add(question.id);
       return question;
@@ -119,11 +135,16 @@ test("previous and next use sorted available IDs", () => {
   assert.equal(nextByOffset(sorted, 7, 1), 9);
 });
 
-test("random range selection uses only available IDs in the requested range", () => {
+test("recommended question uses only available IDs in the profile range", () => {
   const sorted = normalizeQuestions(questions);
   const matches = questionsInRange(sorted, 40, 42);
   assert.deepEqual(matches.map((question) => question.id), [40, 41, 42]);
   assert.deepEqual(questionsInRange(sorted, 9999, 10000), []);
+  assert.equal(pageSource.includes("Recommended question in selected range"), true);
+  assert.equal(pageSource.includes("Using profile range"), true);
+  assert.equal(pageSource.includes("chooseRecommendedQuestion"), true);
+  assert.equal(pageSource.includes("topics with the lowest answered percentage"), true);
+  assert.equal(pageSource.includes("Random range"), false);
 });
 
 test("there is no grading behavior", () => {
@@ -172,4 +193,21 @@ test("choice keys A through F are supported", () => {
       assert.equal(choiceKeys.includes(key), true);
     }
   }
+});
+
+test("all questions have recognized study tags", () => {
+  for (const question of questions) {
+    assert.ok(question.tags.length > 0, `question ${question.id} has no tags`);
+    for (const tag of question.tags) {
+      assert.equal(questionTags.includes(tag), true, `question ${question.id} has invalid tag ${tag}`);
+    }
+  }
+  assert.equal(pageSource.includes("currentQuestion.tags.map"), true);
+});
+
+test("all questions include local study explanations", () => {
+  for (const question of questions) {
+    assert.ok(question.explanation.trim().length > 80, `question ${question.id} has a weak explanation`);
+  }
+  assert.equal(quizSource.includes("explanation: typeof item.explanation === \"string\" ? item.explanation : \"\""), true);
 });

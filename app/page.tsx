@@ -15,7 +15,7 @@ import {
   shouldShowCommunityData,
   type ChoiceKey,
 } from "../lib/quiz";
-import { getProgressResult, type ProgressResult } from "../lib/progress";
+import { getProgressResult, type ProgressRecord, type ProgressResult } from "../lib/progress";
 import { createClient } from "../lib/supabase/client";
 
 const questions = normalizeQuestions(questionsData);
@@ -24,9 +24,16 @@ type ModelProvider = "openai" | "gemini";
 type AiMode = "explain" | "custom" | "followup" | "general";
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type BookmarkRecord = { question_id: number; created_at: string };
+type CachedExplanationRecord = { explanation: string };
 type ProfileState = {
   username: string;
   last_question_id: number | null;
+  metrics_range_start: number;
+  metrics_range_end: number;
+};
+const AI_MODEL_IDS: Record<ModelProvider, string> = {
+  openai: "gpt-5.5",
+  gemini: "gemini-3.5-flash",
 };
 
 function renderInlineMarkdown(text: string): ReactNode[] {
@@ -101,21 +108,22 @@ export default function Home() {
   const lastQuestion = sortedQuestions[sortedQuestions.length - 1];
   const [currentId, setCurrentId] = useState(firstQuestion.id);
   const [numberInput, setNumberInput] = useState(String(firstQuestion.id));
-  const [rangeMin, setRangeMin] = useState(String(firstQuestion.id));
-  const [rangeMax, setRangeMax] = useState(String(lastQuestion.id));
   const [selectedChoice, setSelectedChoice] = useState<ChoiceKey | null>(null);
   const [currentProgressResult, setCurrentProgressResult] = useState<ProgressResult | null>(null);
   const [message, setMessage] = useState("");
   const [theme, setTheme] = useState<Theme>("light");
-  const [modelProvider, setModelProvider] = useState<ModelProvider>("gemini");
+  const [modelProvider, setModelProvider] = useState<ModelProvider>("openai");
   const [customPrompt, setCustomPrompt] = useState("");
   const [followUpPrompt, setFollowUpPrompt] = useState("");
   const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
   const [aiError, setAiError] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [cachedExplanation, setCachedExplanation] = useState("");
+  const [cacheLoading, setCacheLoading] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileState | null>(null);
+  const [progress, setProgress] = useState<ProgressRecord[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkRecord[]>([]);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [savingProgress, setSavingProgress] = useState(false);
@@ -131,6 +139,9 @@ export default function Home() {
   const questionImages = currentQuestion.images ?? [];
   const bookmarkIds = useMemo(() => new Set(bookmarks.map((bookmark) => bookmark.question_id)), [bookmarks]);
   const isBookmarked = bookmarkIds.has(currentQuestion.id);
+  const progressByQuestionId = useMemo(() => new Map(progress.map((record) => [record.question_id, record])), [progress]);
+  const recommendedRangeStart = profile?.metrics_range_start ?? firstQuestion.id;
+  const recommendedRangeEnd = profile?.metrics_range_end ?? lastQuestion.id;
 
   useEffect(() => {
     const saved = localStorage.getItem("quiz-theme");
@@ -171,15 +182,16 @@ export default function Home() {
 
       setUserId(user.id);
 
-      const [{ data: profileData, error: profileError }, { data: bookmarkData, error: bookmarkError }] =
+      const [{ data: profileData, error: profileError }, { data: bookmarkData, error: bookmarkError }, { data: progressData, error: progressError }] =
         await Promise.all([
-          supabase.from("profiles").select("username,last_question_id").eq("id", user.id).single(),
+          supabase.from("profiles").select("username,last_question_id,metrics_range_start,metrics_range_end").eq("id", user.id).single(),
           supabase.from("bookmarks").select("question_id,created_at").eq("user_id", user.id),
+          supabase.from("question_progress").select("question_id,selected_answer,result,answered_at").eq("user_id", user.id),
         ]);
 
       if (cancelled) return;
 
-      const firstError = profileError ?? bookmarkError;
+      const firstError = profileError ?? bookmarkError ?? progressError;
       if (firstError) {
         setSupabaseError(firstError.message);
       }
@@ -197,6 +209,7 @@ export default function Home() {
       }
 
       setBookmarks((bookmarkData ?? []) as BookmarkRecord[]);
+      setProgress((progressData ?? []) as ProgressRecord[]);
       setSessionLoading(false);
     }
 
@@ -215,7 +228,7 @@ export default function Home() {
       .from("profiles")
       .update({ last_question_id: currentQuestion.id })
       .eq("id", userId)
-      .then(({ error }) => {
+      .then(({ error }: { error: { message: string } | null }) => {
         if (error) setSupabaseError(error.message);
       });
   }, [currentQuestion.id, sessionLoading, userId]);
@@ -230,8 +243,49 @@ export default function Home() {
     setFollowUpPrompt("");
     setAiMessages([]);
     setAiError("");
+    setCachedExplanation("");
     setCopyMessage("");
   }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCachedExplanation() {
+      setCachedExplanation("");
+      if (!selectedChoice) {
+        setCacheLoading(false);
+        return;
+      }
+
+      const supabase = createClient();
+      if (!supabase) return;
+
+      setCacheLoading(true);
+      const { data, error } = await supabase
+        .from("ai_explanation_cache")
+        .select("explanation")
+        .eq("question_id", currentQuestion.id)
+        .eq("model_provider", modelProvider)
+        .eq("model_id", AI_MODEL_IDS[modelProvider])
+        .maybeSingle();
+
+      if (cancelled) return;
+      setCacheLoading(false);
+
+      if (error) {
+        setSupabaseError(error.message);
+        return;
+      }
+
+      const cached = data as CachedExplanationRecord | null;
+      if (cached?.explanation) setCachedExplanation(cached.explanation);
+    }
+
+    loadCachedExplanation();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentQuestion.id, modelProvider, selectedChoice]);
 
   async function saveAnswerProgress(answer: ChoiceKey) {
     setSelectedChoice(answer);
@@ -264,6 +318,10 @@ export default function Home() {
       return;
     }
 
+    setProgress((items) => [
+      ...items.filter((item) => item.question_id !== currentQuestion.id),
+      { question_id: currentQuestion.id, selected_answer: answer, result, answered_at: answeredAt },
+    ]);
   }
 
   async function overrideProgressResult(result: Extract<ProgressResult, "correct" | "incorrect">) {
@@ -294,6 +352,11 @@ export default function Home() {
     }
 
     setCurrentProgressResult(result);
+    setProgress((items) =>
+      items.map((item) =>
+        item.question_id === currentQuestion.id ? { ...item, result, selected_answer: selectedChoice, answered_at: item.answered_at } : item,
+      ),
+    );
   }
 
   function resultText(result: ProgressResult) {
@@ -331,6 +394,42 @@ export default function Home() {
     );
   }
 
+  function chooseRecommendedQuestion() {
+    const matches = questionsInRange(sortedQuestions, recommendedRangeStart, recommendedRangeEnd);
+    if (!matches.length) {
+      setMessage(`No questions exist in your profile range ${recommendedRangeStart}-${recommendedRangeEnd}.`);
+      return;
+    }
+
+    const topicStats = new Map<string, { total: number; answered: number; questionIds: Set<number> }>();
+    for (const question of matches) {
+      for (const tag of question.tags) {
+        const stat = topicStats.get(tag) ?? { total: 0, answered: 0, questionIds: new Set<number>() };
+        stat.total += 1;
+        if (progressByQuestionId.has(question.id)) stat.answered += 1;
+        stat.questionIds.add(question.id);
+        topicStats.set(tag, stat);
+      }
+    }
+
+    const weakestTopics = [...topicStats.entries()]
+      .filter(([, stat]) => stat.answered < stat.total)
+      .sort((a, b) => a[1].answered / a[1].total - b[1].answered / b[1].total);
+
+    const weakestRatio = weakestTopics[0] ? weakestTopics[0][1].answered / weakestTopics[0][1].total : null;
+    const weakestQuestionIds = new Set<number>();
+    for (const [, stat] of weakestTopics) {
+      if (weakestRatio === null || stat.answered / stat.total !== weakestRatio) break;
+      stat.questionIds.forEach((id) => weakestQuestionIds.add(id));
+    }
+
+    const candidates = matches.filter((question) => !progressByQuestionId.has(question.id) && (!weakestQuestionIds.size || weakestQuestionIds.has(question.id)));
+    const fallbackCandidates = matches.filter((question) => !progressByQuestionId.has(question.id));
+    const pool = candidates.length ? candidates : fallbackCandidates.length ? fallbackCandidates : matches;
+    const next = pool[Math.floor(Math.random() * pool.length)];
+    resetForQuestion(next.id);
+  }
+
 
   function buildManualPrompt() {
     if (!selectedChoice) {
@@ -350,6 +449,14 @@ export default function Home() {
   }
 
   async function askAi(mode: AiMode) {
+    if (mode === "explain" && cachedExplanation.trim()) {
+      setAiError("");
+      setAiMessages([{ role: "assistant", content: cachedExplanation }]);
+      setCustomPrompt("");
+      setFollowUpPrompt("");
+      return;
+    }
+
     const userMessage = mode === "custom" || mode === "general" ? customPrompt.trim() : mode === "followup" ? followUpPrompt.trim() : undefined;
     if ((mode === "custom" || mode === "general" || mode === "followup") && !userMessage) {
       setAiError("Write a question first.");
@@ -392,9 +499,10 @@ export default function Home() {
           history: aiMessages.slice(-6),
         }),
       });
-      const data: { message?: string; error?: string } = await response.json();
+      const data: { message?: string; error?: string; cached?: boolean } = await response.json();
       if (!response.ok) throw new Error(data.error ?? "AI request failed.");
 
+      if (mode === "explain" && data.message) setCachedExplanation(data.message);
       setAiMessages([...nextMessages, { role: "assistant", content: data.message ?? "" }]);
       setCustomPrompt("");
       setFollowUpPrompt("");
@@ -436,7 +544,7 @@ export default function Home() {
                   disabled={aiLoading}
                   onClick={() => askAi("explain")}
                 >
-                  {aiLoading ? "Asking..." : "Explain this question"}
+                  {aiLoading ? "Asking..." : cacheLoading ? "Checking cache..." : cachedExplanation ? "View cached explanation" : "Explain this question"}
                 </button>
                 <button
                   className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
@@ -540,24 +648,6 @@ export default function Home() {
     resetForQuestion(question.id);
   }
 
-  function chooseRandomInRange() {
-    const min = Number(rangeMin);
-    const max = Number(rangeMax);
-    if (!Number.isFinite(min) || !Number.isFinite(max)) {
-      setMessage("Enter a numeric minimum and maximum.");
-      return;
-    }
-
-    const matches = questionsInRange(sortedQuestions, min, max);
-    if (matches.length === 0) {
-      setMessage("No available questions exist in that range.");
-      return;
-    }
-
-    const next = matches[Math.floor(Math.random() * matches.length)];
-    resetForQuestion(next.id);
-  }
-
   function goToOffset(offset: number) {
     const next = sortedQuestions[currentIndex + offset];
     if (next) resetForQuestion(next.id);
@@ -623,24 +713,13 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Random range</span>
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-              <input
-                aria-label="Minimum question number"
-                className={`min-w-0 rounded border px-3 py-2 ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-100" : "border-stone-300 bg-white"}`}
-                inputMode="numeric"
-                value={rangeMin}
-                onChange={(event) => setRangeMin(event.target.value)}
-              />
-              <input
-                aria-label="Maximum question number"
-                className={`min-w-0 rounded border px-3 py-2 ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-100" : "border-stone-300 bg-white"}`}
-                inputMode="numeric"
-                value={rangeMax}
-                onChange={(event) => setRangeMax(event.target.value)}
-              />
-              <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRandomInRange}>
-                Pick
+            <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Recommended question in selected range</span>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+              <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
+                Using profile range {recommendedRangeStart}-{recommendedRangeEnd}; picks from topics with the lowest answered percentage.
+              </p>
+              <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRecommendedQuestion}>
+                Recommend
               </button>
             </div>
           </div>
@@ -659,6 +738,19 @@ export default function Home() {
               {isBookmarked ? "Remove bookmark" : "Bookmark"}
             </button>
           </div>
+
+          {currentQuestion.tags.length ? (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {currentQuestion.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className={`rounded border px-2 py-1 text-xs font-medium ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-200 bg-stone-50 text-stone-700"}`}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
 
           {currentQuestion.hasImage && questionImages.length === 0 ? (
             <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">

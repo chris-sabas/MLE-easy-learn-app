@@ -117,6 +117,48 @@ test("profile dashboard shows color-coded question links in selected range", () 
   assert.equal(profileSource.includes("Unanswered"), true);
 });
 
+test("profile dashboard shows expandable topic performance", () => {
+  assert.equal(profileSource.includes("Topic performance"), true);
+  assert.equal(profileSource.includes("topicMetrics"), true);
+  assert.equal(profileSource.includes("expandedTopics"), true);
+  assert.equal(profileSource.includes("toggleTopic(item.topic)"), true);
+  assert.equal(profileSource.includes("item.percentages.answered"), true);
+  assert.equal(profileSource.includes("bg-emerald-600"), true);
+  assert.equal(profileSource.includes("bg-red-600"), true);
+  assert.equal(profileSource.includes("bg-amber-500"), true);
+  assert.equal(profileSource.includes("item.percentages.ungraded"), true);
+  assert.equal(profileSource.includes("item.percentages.correct"), true);
+  assert.equal(profileSource.includes("item.percentages.incorrect"), true);
+  assert.equal(profileSource.includes("item.percentages.unanswered"), true);
+  assert.equal(profileSource.includes("key={`${item.topic}-${question.id}`"), true);
+  assert.ok(questions.every((question) => Array.isArray(question.tags) && question.tags.length > 0));
+});
+
+test("topic metrics count statuses per tagged question", () => {
+  const taggedQuestions = [
+    { id: 1, tags: ["A", "B"] },
+    { id: 2, tags: ["A"] },
+    { id: 3, tags: ["B"] },
+  ];
+  const rows = [
+    { question_id: 1, result: "correct" },
+    { question_id: 2, result: "incorrect" },
+  ];
+  const progressById = new Map(rows.map((row) => [row.question_id, row]));
+  const topicA = taggedQuestions.filter((question) => question.tags.includes("A"));
+  const counts = topicA.reduce(
+    (accumulator, question) => {
+      const status = progressById.get(question.id)?.result ?? "unanswered";
+      accumulator[status] += 1;
+      return accumulator;
+    },
+    { correct: 0, incorrect: 0, ungraded: 0, unanswered: 0 },
+  );
+  assert.deepEqual(counts, { correct: 1, incorrect: 1, ungraded: 0, unanswered: 0 });
+  const answeredPercentage = Math.round(((counts.correct + counts.incorrect + counts.ungraded) / topicA.length) * 100);
+  assert.equal(answeredPercentage, 100);
+});
+
 test("quiz shows community result and supports manual correct or incorrect override", () => {
   assert.equal(pageSource.includes("currentProgressResult"), true);
   assert.equal(pageSource.includes("Correct according to community voting."), true);

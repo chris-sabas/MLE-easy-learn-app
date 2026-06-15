@@ -4,6 +4,7 @@ import test from "node:test";
 
 const pageSource = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const routeSource = readFileSync(new URL("../app/api/ai/route.ts", import.meta.url), "utf8");
+const cacheMigration = readFileSync(new URL("../supabase/migrations/202606140002_add_ai_explanation_cache.sql", import.meta.url), "utf8");
 
 test("API rejects missing question", () => {
   assert.equal(routeSource.includes("Missing or invalid question."), true);
@@ -34,6 +35,25 @@ test("AI context includes question, choices, votes, selected answer, and Arnout 
   assert.equal(routeSource.includes("selectedAnswer: selectedAnswer ?? null"), true);
   assert.equal(routeSource.includes("retainedComments"), false);
   assert.equal(pageSource.includes("comments: currentQuestion.comments"), false);
+});
+
+test("Explain checks and saves Supabase cached explanations", () => {
+  assert.equal(cacheMigration.includes("create table public.ai_explanation_cache"), true);
+  assert.equal(cacheMigration.includes("primary key (question_id, model_provider, model_id)"), true);
+  assert.equal(cacheMigration.includes("alter table public.ai_explanation_cache enable row level security;"), true);
+  assert.equal(cacheMigration.includes("ai_explanation_cache_select_authenticated"), true);
+  assert.equal(routeSource.includes("getCachedExplanation(question.id, body.modelProvider)"), true);
+  assert.equal(routeSource.includes("saveCachedExplanation(question.id, body.modelProvider, result.text)"), true);
+  assert.equal(routeSource.includes("cached: true"), true);
+  assert.equal(routeSource.includes("cached: false"), true);
+});
+
+test("Explain button can view cached explanation before generating", () => {
+  assert.equal(pageSource.includes("ai_explanation_cache"), true);
+  assert.equal(pageSource.includes("AI_MODEL_IDS"), true);
+  assert.equal(pageSource.includes("setCachedExplanation(cached.explanation)"), true);
+  assert.equal(pageSource.includes("View cached explanation"), true);
+  assert.equal(pageSource.includes("mode === \"explain\" && cachedExplanation.trim()"), true);
 });
 
 test("client hides API keys", () => {
@@ -138,8 +158,8 @@ test("provider prompt asks for concise 600-token answers", () => {
   assert.equal(routeSource.includes("thinkingConfig: { thinkingBudget: GEMINI_THINKING_BUDGET }"), true);
 });
 
-test("Gemini is the default AI provider", () => {
-  assert.equal(pageSource.includes("useState<ModelProvider>(\"gemini\")"), true);
+test("GPT is the default AI provider", () => {
+  assert.equal(pageSource.includes("useState<ModelProvider>(\"openai\")"), true);
 });
 
 test("public header avoids local question count", () => {

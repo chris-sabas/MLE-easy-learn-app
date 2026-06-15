@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "../../../lib/supabase/server";
 
 const OPENAI_MODEL = "gpt-5.5";
 const GEMINI_MODEL = "gemini-3.5-flash";
@@ -34,8 +35,14 @@ type AiRequestBody = {
   history?: AiHistoryMessage[];
 };
 
+type AiProviderResult = { text: string } | { error: string };
+
 const SYSTEM_MESSAGE =
   "You are a study assistant for ML/Google Cloud certification-style practice questions. The source is unofficial. Community votes may be incorrect, and Arnout's answer/comment may also need technical verification. Explain the concepts, evaluate the choices, and clearly separate community vote signal, Arnout signal, and your own technical assessment. Aim for about 600 visible tokens, so you are concise but still helpful and explanatory. Finish the answer completely; do not stop mid-choice or mid-sentence. Do not reveal hidden reasoning, chain-of-thought, scratchpad, internal analysis, or thinking process. Provide only the final study explanation. Use concise reasoning summaries when useful.";
+
+function modelIdForProvider(provider: ModelProvider) {
+  return provider === "openai" ? OPENAI_MODEL : GEMINI_MODEL;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -168,7 +175,7 @@ function extractGeminiVisibleText(data: unknown): string {
     .trim();
 }
 
-async function callOpenAi(messages: AiHistoryMessage[]) {
+async function callOpenAi(messages: AiHistoryMessage[]): Promise<AiProviderResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return { error: "OpenAI provider is not configured. Missing OPENAI_API_KEY." };
 
@@ -194,7 +201,7 @@ async function callOpenAi(messages: AiHistoryMessage[]) {
   return { text };
 }
 
-async function callGemini(messages: AiHistoryMessage[]) {
+async function callGemini(messages: AiHistoryMessage[]): Promise<AiProviderResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { error: "Gemini provider is not configured. Missing GEMINI_API_KEY." };
 
@@ -229,6 +236,43 @@ async function callGemini(messages: AiHistoryMessage[]) {
   return { text };
 }
 
+async function getCachedExplanation(questionId: number, provider: ModelProvider) {
+  const supabase = await createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("ai_explanation_cache")
+    .select("explanation")
+    .eq("question_id", questionId)
+    .eq("model_provider", provider)
+    .eq("model_id", modelIdForProvider(provider))
+    .maybeSingle();
+
+  if (error || !data || typeof data.explanation !== "string") return null;
+  return data.explanation;
+}
+
+async function saveCachedExplanation(questionId: number, provider: ModelProvider, explanation: string) {
+  const supabase = await createClient();
+  if (!supabase) return;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  await supabase.from("ai_explanation_cache").upsert(
+    {
+      question_id: questionId,
+      model_provider: provider,
+      model_id: modelIdForProvider(provider),
+      explanation,
+      created_by: user.id,
+    },
+    { onConflict: "question_id,model_provider,model_id" },
+  );
+}
+
 export async function POST(request: Request) {
   let body: AiRequestBody;
   try {
@@ -255,6 +299,13 @@ export async function POST(request: Request) {
     return jsonError("userMessage must be 800 characters or fewer.");
   }
 
+  if (body.mode === "explain" && question) {
+    const cachedExplanation = await getCachedExplanation(question.id, body.modelProvider);
+    if (cachedExplanation) {
+      return NextResponse.json({ message: cachedExplanation, cached: true, historyUsed: 0 });
+    }
+  }
+
   const history = normalizeHistory(body.history);
   const userMessage =
     question && body.mode !== "general"
@@ -266,7 +317,11 @@ export async function POST(request: Request) {
   ];
 
   const result = body.modelProvider === "openai" ? await callOpenAi(messages) : await callGemini(messages);
-  if (result.error) return jsonError(result.error, result.error.includes("not configured") ? 503 : 502);
+  if ("error" in result) return jsonError(result.error, result.error.includes("not configured") ? 503 : 502);
 
-  return NextResponse.json({ message: result.text, historyUsed: history.length });
+  if (body.mode === "explain" && question) {
+    await saveCachedExplanation(question.id, body.modelProvider, result.text);
+  }
+
+  return NextResponse.json({ message: result.text, cached: false, historyUsed: history.length });
 }
