@@ -22,6 +22,10 @@ export type Metrics = {
 };
 
 export function getProgressResult(question: QuizQuestion, selectedAnswer: ChoiceKey): ProgressResult {
+  if (question.arnoutsAnswer) {
+    return selectedAnswer === question.arnoutsAnswer ? "correct" : "incorrect";
+  }
+
   const voteValues = Object.values(question.voteDistribution).filter((value): value is number => typeof value === "number" && value > 0);
   if (!voteValues.length) return "ungraded";
 

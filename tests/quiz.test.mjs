@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import questions from "../app/data/questions.json" with { type: "json" };
 
@@ -36,6 +36,16 @@ function collapseWhitespace(value) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function formatQuestionText(value) {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function shouldShowCommunityData(selectedChoice) {
   return selectedChoice !== null;
 }
@@ -64,9 +74,11 @@ test("sparse vote distributions are accepted", () => {
   assert.ok(sparse);
 });
 
-test("question text whitespace is collapsed at render level", () => {
+test("question text preserves intentional paragraph breaks while collapsing PDF wraps", () => {
   assert.equal(collapseWhitespace("One line\n  another\tline"), "One line another line");
-  assert.equal(pageSource.includes("collapseWhitespace(currentQuestion.question)"), true);
+  assert.equal(formatQuestionText("One line  \n  structured\tline\n\n\nSecond block"), "One line\nstructured line\n\nSecond block");
+  assert.equal(pageSource.includes("formatQuestionText(currentQuestion.question)"), true);
+  assert.equal(pageSource.includes("whitespace-pre-line"), true);
 });
 
 test("vote entries only include positive percentages sorted high to low", () => {
@@ -126,12 +138,32 @@ test("there is no source-link section", () => {
   assert.equal(blockedTerms.some((term) => combined.includes(term)), false);
 });
 
-test("hasImage true displays the image warning", () => {
-  assert.ok(questions.some((question) => question.hasImage === true));
+test("questions can include extracted image paths", () => {
+  const withImages = questions.filter((question) => Array.isArray(question.images) && question.images.length > 0);
+  assert.ok(withImages.length > 0);
+  for (const question of withImages) {
+    for (const imagePath of question.images) {
+      assert.match(imagePath, /^\/question-images\/q\d{3}-\d+\.png$/);
+      assert.equal(existsSync(new URL(`../public${imagePath}`, import.meta.url)), true);
+    }
+  }
+});
+
+test("question images render before answer choices", () => {
+  const imageIndex = pageSource.indexOf("questionImages.map");
+  const choicesIndex = pageSource.indexOf("choiceEntries(currentQuestion).map", imageIndex);
+  assert.ok(imageIndex >= 0);
+  assert.ok(choicesIndex > imageIndex);
+});
+
+test("missing-image warning is guarded for hasImage questions without extracted images", () => {
+  assert.ok(questions.some((question) => question.hasImage === true && question.images?.length > 0));
+  assert.equal(questions.some((question) => question.hasImage === true && (!question.images || question.images.length === 0)), false);
   assert.equal(
-    pageSource.includes("This question includes an image from the source document that is not currently displayed."),
+    pageSource.includes("currentQuestion.hasImage && questionImages.length === 0"),
     true,
   );
+  assert.equal(pageSource.includes("This question includes an image from the source document that is not currently displayed."), true);
 });
 
 test("choice keys A through F are supported", () => {

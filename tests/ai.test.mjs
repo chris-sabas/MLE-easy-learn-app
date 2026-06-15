@@ -25,12 +25,15 @@ test("API trims history to latest 6 messages", () => {
   assert.equal(routeSource.includes(".slice(-MAX_HISTORY_MESSAGES)"), true);
 });
 
-test("AI context includes question, choices, votes, selected answer, and comments", () => {
+test("AI context includes question, choices, votes, selected answer, and Arnout notes", () => {
   assert.equal(routeSource.includes("question: question.question"), true);
   assert.equal(routeSource.includes("choices: question.choices"), true);
   assert.equal(routeSource.includes("communityVotes: question.voteDistribution"), true);
+  assert.equal(routeSource.includes("arnoutsAnswer: question.arnoutsAnswer || null"), true);
+  assert.equal(routeSource.includes("arnoutsComment: question.arnoutsComment || null"), true);
   assert.equal(routeSource.includes("selectedAnswer: selectedAnswer ?? null"), true);
-  assert.equal(routeSource.includes("retainedComments: question.comments.slice(0, MAX_COMMENTS)"), true);
+  assert.equal(routeSource.includes("retainedComments"), false);
+  assert.equal(pageSource.includes("comments: currentQuestion.comments"), false);
 });
 
 test("client hides API keys", () => {
@@ -83,7 +86,22 @@ test("copy prompt is hidden before an AI conversation starts", () => {
   const initialControls = pageSource.slice(initialControlsIndex, conversationIndex);
   assert.ok(initialControlsIndex >= 0);
   assert.ok(conversationIndex > initialControlsIndex);
-  assert.equal(initialControls.includes("Copy prompt"), false);
+  const preAnswerIndex = initialControls.indexOf("Ask a general question");
+  const explainIndex = initialControls.indexOf("Explain this question");
+  assert.ok(preAnswerIndex >= 0);
+  assert.ok(explainIndex >= 0);
+  assert.equal(initialControls.slice(preAnswerIndex, explainIndex).includes("Copy prompt"), false);
+});
+
+test("answered explain controls include context copy prompt before conversation starts", () => {
+  const initialControlsIndex = pageSource.indexOf("{!hasAiConversation ? (");
+  const conversationIndex = pageSource.indexOf("{aiMessages.length ? (");
+  const initialControls = pageSource.slice(initialControlsIndex, conversationIndex);
+  const explainIndex = initialControls.indexOf("Explain this question");
+  const customIndex = initialControls.indexOf("Ask custom question", explainIndex);
+  assert.ok(explainIndex >= 0);
+  assert.ok(customIndex > explainIndex);
+  assert.equal(initialControls.slice(explainIndex, customIndex).includes("Copy prompt"), true);
 });
 
 test("OpenAI visible text extraction supports final response text", () => {
@@ -113,10 +131,11 @@ test("API response parsing excludes raw reasoning and thought fields", () => {
 test("provider prompt asks for concise 600-token answers", () => {
   assert.equal(routeSource.includes("Aim for about 600 visible tokens"), true);
   assert.equal(routeSource.includes("Finish the answer completely"), true);
-  assert.equal(routeSource.includes("MAX_OUTPUT_TOKENS = 1_800"), true);
+  assert.equal(routeSource.includes("MAX_OUTPUT_TOKENS = 900"), true);
   assert.equal(routeSource.includes("max_output_tokens: MAX_OUTPUT_TOKENS"), true);
   assert.equal(routeSource.includes("maxOutputTokens: MAX_OUTPUT_TOKENS"), true);
-  assert.equal(routeSource.includes("thinkingConfig: { thinkingBudget: 0 }"), true);
+  assert.equal(routeSource.includes("GEMINI_THINKING_BUDGET = 512"), true);
+  assert.equal(routeSource.includes("thinkingConfig: { thinkingBudget: GEMINI_THINKING_BUDGET }"), true);
 });
 
 test("Gemini is the default AI provider", () => {

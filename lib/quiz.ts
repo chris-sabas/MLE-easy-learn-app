@@ -12,8 +12,11 @@ export interface QuizQuestion {
   choices: Partial<Record<ChoiceKey, string>>;
   voteDistribution: Partial<Record<ChoiceKey, number>>;
   comments: QuizComment[];
+  arnoutsComment: string;
+  arnoutsAnswer: ChoiceKey | "";
   sourcePages?: number[];
   hasImage?: boolean;
+  images?: string[];
 }
 
 const CHOICE_KEYS: ChoiceKey[] = ["A", "B", "C", "D", "E", "F"];
@@ -81,6 +84,12 @@ function normalizeSourcePages(value: unknown): number[] | undefined {
   return pages.length ? [...new Set(pages)].sort((a, b) => a - b) : undefined;
 }
 
+function normalizeImages(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const images = value.filter((image): image is string => typeof image === "string" && image.startsWith("/question-images/"));
+  return images.length ? images : [];
+}
+
 export function normalizeQuestions(value: unknown): QuizQuestion[] {
   if (!Array.isArray(value)) {
     throw new Error("app/data/questions.json must export an array of questions.");
@@ -109,8 +118,11 @@ export function normalizeQuestions(value: unknown): QuizQuestion[] {
       choices: normalizeChoices(item.choices, id),
       voteDistribution: normalizeVoteDistribution(item.voteDistribution),
       comments: normalizeComments(item.comments),
+      arnoutsComment: typeof item.arnoutsComment === "string" ? item.arnoutsComment : "",
+      arnoutsAnswer: typeof item.arnoutsAnswer === "string" && isChoiceKey(item.arnoutsAnswer) ? item.arnoutsAnswer : "",
       sourcePages: normalizeSourcePages(item.sourcePages),
       hasImage: typeof item.hasImage === "boolean" ? item.hasImage : undefined,
+      images: normalizeImages(item.images),
     };
   });
 
@@ -147,6 +159,16 @@ export function positiveVoteEntries(question: QuizQuestion): Array<[ChoiceKey, n
 
 export function collapseWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
+}
+
+export function formatQuestionText(value: string): string {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+/g, " ").trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export function shouldShowCommunityData(selectedChoice: ChoiceKey | null): boolean {

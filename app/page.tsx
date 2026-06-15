@@ -8,6 +8,7 @@ import {
   choiceEntries,
   collapseWhitespace,
   findQuestionById,
+  formatQuestionText,
   normalizeQuestions,
   positiveVoteEntries,
   questionsInRange,
@@ -127,6 +128,7 @@ export default function Home() {
   const voteEntries = positiveVoteEntries(currentQuestion);
   const hasVotes = voteEntries.length > 0;
   const hasAiConversation = aiMessages.length > 0;
+  const questionImages = currentQuestion.images ?? [];
   const bookmarkIds = useMemo(() => new Set(bookmarks.map((bookmark) => bookmark.question_id)), [bookmarks]);
   const isBookmarked = bookmarkIds.has(currentQuestion.id);
 
@@ -295,6 +297,9 @@ export default function Home() {
   }
 
   function resultText(result: ProgressResult) {
+    if (currentQuestion.arnoutsAnswer) {
+      return result === "correct" ? "Correct according to Arnout's answer." : "Incorrect according to Arnout's answer.";
+    }
     if (result === "ungraded") return "Ungraded because no community voting data is available.";
     return result === "correct" ? "Correct according to community voting." : "Incorrect according to community voting.";
   }
@@ -332,7 +337,7 @@ export default function Home() {
       return `Disclaimer: This prompt is intended for an external AI chatbot. It is optimized for careful study help and answer quality, not brevity.\n\nYou are a study assistant. I have not submitted an answer yet, so do not reveal or infer the answer to the quiz. Help me study this general topic or clarify concepts only. Explain the underlying concepts and ask clarifying questions if needed.\n\nMy question:\n${customPrompt.trim() || "[write your general study question here]"}`;
     }
 
-    return `Disclaimer: This prompt is intended for an external AI chatbot. It is optimized to get the most accurate study answer possible, not to minimize token usage.\n\nYou are a study assistant for ML/Google Cloud certification-style practice questions. The source is unofficial study material. Community votes and comments may be wrong, so do not blindly follow them. Analyze the question from first principles, evaluate every choice, identify likely traps, and clearly separate: (1) community vote signal, (2) comment signal, and (3) your own technical assessment. If the supplied community signal conflicts with your technical assessment, say so clearly. Provide the final answer you think is best and explain why.\n\nQuestion #${currentQuestion.id}: ${collapseWhitespace(currentQuestion.question)}\n\nChoices:\n${choiceEntries(currentQuestion).map(([key, text]) => `${key}. ${text}`).join("\n")}\n\nCommunity votes:\n${voteEntries.length ? voteEntries.map(([key, percent]) => `${key}: ${percent}%`).join("\n") : "No community voting data."}\n\nSelected answer: ${selectedChoice}\n\nComments:\n${currentQuestion.comments.slice(0, 5).map((comment) => `- ${comment.author} (${comment.votes} votes): ${comment.text}`).join("\n") || "No retained comments."}\n\nMy question:\n${customPrompt.trim() || "Explain this question and say which answer you think is best."}`;
+    return `Disclaimer: This prompt is intended for an external AI chatbot. It is optimized to get the most accurate study answer possible, not to minimize token usage.\n\nYou are a study assistant for ML/Google Cloud certification-style practice questions. The source is unofficial study material. Community votes may be wrong, so do not blindly follow them. Analyze the question from first principles, evaluate every choice, identify likely traps, and clearly separate: (1) community vote signal, (2) Arnout's note if provided, and (3) your own technical assessment. Arnout's answer is the preferred local answer key when provided, but still explain the technical reasoning. If the supplied signals conflict with your technical assessment, say so clearly. Provide the final answer you think is best and explain why.\n\nQuestion #${currentQuestion.id}: ${collapseWhitespace(currentQuestion.question)}\n\nChoices:\n${choiceEntries(currentQuestion).map(([key, text]) => `${key}. ${text}`).join("\n")}\n\nCommunity votes:\n${voteEntries.length ? voteEntries.map(([key, percent]) => `${key}: ${percent}%`).join("\n") : "No community voting data."}\n\nArnout's answer: ${currentQuestion.arnoutsAnswer || "Not provided."}\n\nArnout's comment:\n${currentQuestion.arnoutsComment || "No Arnout comment."}\n\nSelected answer: ${selectedChoice}\n\nMy question:\n${customPrompt.trim() || "Explain this question and say which answer you think is best."}`;
   }
 
   async function copyPrompt() {
@@ -377,7 +382,8 @@ export default function Home() {
                 question: currentQuestion.question,
                 choices: currentQuestion.choices,
                 voteDistribution: currentQuestion.voteDistribution,
-                comments: currentQuestion.comments.slice(0, 5),
+                arnoutsComment: currentQuestion.arnoutsComment,
+                arnoutsAnswer: currentQuestion.arnoutsAnswer,
                 hasImage: currentQuestion.hasImage,
               }
             : undefined,
@@ -424,13 +430,22 @@ export default function Home() {
         {!hasAiConversation ? (
           <div className="grid gap-3">
             {selectedChoice ? (
-              <button
-                className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-400"
-                disabled={aiLoading}
-                onClick={() => askAi("explain")}
-              >
-                {aiLoading ? "Asking..." : "Explain this question"}
-              </button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-400"
+                  disabled={aiLoading}
+                  onClick={() => askAi("explain")}
+                >
+                  {aiLoading ? "Asking..." : "Explain this question"}
+                </button>
+                <button
+                  className={`rounded border px-4 py-2 text-sm font-medium ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
+                  type="button"
+                  onClick={copyPrompt}
+                >
+                  Copy prompt
+                </button>
+              </div>
             ) : (
               <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
                 Before you answer, ask general study questions only. The AI will not receive the quiz context yet.
@@ -645,13 +660,28 @@ export default function Home() {
             </button>
           </div>
 
-          {currentQuestion.hasImage ? (
+          {currentQuestion.hasImage && questionImages.length === 0 ? (
             <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
               This question includes an image from the source document that is not currently displayed.
             </div>
           ) : null}
 
-          <p className={`text-lg font-medium leading-7 ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>{collapseWhitespace(currentQuestion.question)}</p>
+          <p className={`whitespace-pre-line text-lg font-medium leading-7 ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>
+            {formatQuestionText(currentQuestion.question)}
+          </p>
+
+          {questionImages.length ? (
+            <div className="mt-5 grid gap-3">
+              {questionImages.map((imagePath, index) => (
+                <img
+                  key={imagePath}
+                  alt={`Question ${currentQuestion.id} image ${index + 1}`}
+                  className={`max-h-[32rem] w-full rounded border object-contain ${theme === "dark" ? "border-stone-700 bg-stone-950" : "border-stone-200 bg-white"}`}
+                  src={imagePath}
+                />
+              ))}
+            </div>
+          ) : null}
 
           <div className="mt-5 grid gap-3">
             {choiceEntries(currentQuestion).map(([key, text]) => {
@@ -720,6 +750,14 @@ export default function Home() {
         {showCommunityData ? (
           <section className={`grid gap-4 rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
             <div>
+              {currentQuestion.arnoutsComment || currentQuestion.arnoutsAnswer ? (
+                <div className={`mb-4 rounded border p-3 ${theme === "dark" ? "border-purple-700 bg-purple-950 text-purple-100" : "border-purple-200 bg-purple-50 text-purple-950"}`}>
+                  <h2 className="text-base font-semibold">Arnout's note</h2>
+                  {currentQuestion.arnoutsAnswer ? <p className="mt-2 text-sm">Arnout's answer: <span className="font-semibold">{currentQuestion.arnoutsAnswer}</span></p> : null}
+                  {currentQuestion.arnoutsComment ? <p className="mt-2 text-sm leading-6">{currentQuestion.arnoutsComment}</p> : null}
+                </div>
+              ) : null}
+
               <h2 className={`text-base font-semibold ${theme === "dark" ? "text-stone-50" : "text-stone-950"}`}>Community vote distribution</h2>
               {hasVotes ? (
                 <ul className="mt-3 grid gap-2">

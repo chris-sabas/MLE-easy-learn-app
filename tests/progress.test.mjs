@@ -10,8 +10,11 @@ const middlewareSource = readFileSync(new URL("../lib/supabase/middleware.ts", i
 const pageSource = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const profileSource = readFileSync(new URL("../app/profile/page.tsx", import.meta.url), "utf8");
 const signUpSource = readFileSync(new URL("../app/auth/sign-up/page.tsx", import.meta.url), "utf8");
+const progressSource = readFileSync(new URL("../lib/progress.ts", import.meta.url), "utf8");
+const questions = JSON.parse(readFileSync(new URL("../app/data/questions.json", import.meta.url), "utf8"));
 
-function resultFor(voteDistribution, selectedAnswer) {
+function resultFor(voteDistribution, selectedAnswer, arnoutsAnswer = "") {
+  if (arnoutsAnswer) return selectedAnswer === arnoutsAnswer ? "correct" : "incorrect";
   const values = Object.values(voteDistribution).filter((value) => typeof value === "number" && value > 0);
   if (!values.length) return "ungraded";
   const max = Math.max(...values);
@@ -50,6 +53,12 @@ test("lower-voted answer is incorrect", () => {
 
 test("no votes gives ungraded", () => {
   assert.equal(resultFor({}, "A"), "ungraded");
+});
+
+test("Arnout answer overrides community vote result", () => {
+  assert.equal(resultFor({ A: 100, D: 0 }, "D", "D"), "correct");
+  assert.equal(resultFor({ A: 100, D: 0 }, "A", "D"), "incorrect");
+  assert.equal(progressSource.includes("if (question.arnoutsAnswer)"), true);
 });
 
 test("progress upsert updates an existing record", () => {
@@ -117,6 +126,16 @@ test("quiz shows community result and supports manual correct or incorrect overr
   assert.equal(pageSource.includes("Mark incorrect"), true);
   assert.equal(pageSource.includes("overrideProgressResult(\"correct\")"), true);
   assert.equal(pageSource.includes("overrideProgressResult(\"incorrect\")"), true);
+});
+
+test("Arnout notes are extracted and displayed before community votes", () => {
+  assert.ok(questions.some((question) => question.arnoutsComment || question.arnoutsAnswer));
+  assert.ok(questions.every((question) => typeof question.arnoutsComment === "string"));
+  assert.ok(questions.every((question) => typeof question.arnoutsAnswer === "string"));
+  const arnoutIndex = pageSource.indexOf("Arnout's note");
+  const votesIndex = pageSource.indexOf("Community vote distribution");
+  assert.ok(arnoutIndex >= 0);
+  assert.ok(votesIndex > arnoutIndex);
 });
 
 test("unauthenticated users are redirected", () => {

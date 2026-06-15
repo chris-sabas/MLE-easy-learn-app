@@ -34,7 +34,7 @@ WARNINGS_PATH = ROOT / "scripts" / "extraction-warnings.json"
 REPORT_PATH = ROOT / "scripts" / "extraction-report.json"
 CACHE_PATH = ROOT / "scripts" / ".extraction-cache.json"
 
-SCHEMA_VERSION = "questions-v2-sourcePages-hasImage"
+SCHEMA_VERSION = "questions-v3-arnout-notes"
 EXPECTED_START_ID = 1
 EXPECTED_END_ID = 285
 VALIDATION_END_ID = 10
@@ -424,8 +424,11 @@ def convert_block_locally(block: QuestionBlock, warnings: list[dict[str, Any]]) 
         "choices": extract_choices(question_part),
         "voteDistribution": extract_vote_distribution(block.text, warnings, block.id),
         "comments": extract_comments(discussion),
+        "arnoutsComment": "",
+        "arnoutsAnswer": "",
         "sourcePages": block.source_pages,
         "hasImage": False,
+        "images": [],
     }
 
 
@@ -468,6 +471,15 @@ def validate_question(item: dict[str, Any], expected_id: int, pdf_page_count: in
 
     if not isinstance(item.get("hasImage"), bool):
         failures.append("hasImage must be a boolean")
+    images = item.get("images", [])
+    if not isinstance(images, list) or any(not isinstance(image, str) for image in images):
+        failures.append("images must be an array of strings")
+
+    if not isinstance(item.get("arnoutsComment", ""), str):
+        failures.append("arnoutsComment must be a string")
+    arnouts_answer = item.get("arnoutsAnswer", "")
+    if not isinstance(arnouts_answer, str) or (arnouts_answer and not re.fullmatch(r"[A-F]", arnouts_answer)):
+        failures.append("arnoutsAnswer must be blank or an answer choice A-F")
 
     for index, comment in enumerate(item.get("comments", [])):
         text = comment.get("text", "") if isinstance(comment, dict) else ""

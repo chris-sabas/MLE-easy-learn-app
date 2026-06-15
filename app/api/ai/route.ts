@@ -4,8 +4,8 @@ const OPENAI_MODEL = "gpt-5.5";
 const GEMINI_MODEL = "gemini-3.5-flash";
 const MAX_USER_MESSAGE_LENGTH = 800;
 const MAX_HISTORY_MESSAGES = 6;
-const MAX_COMMENTS = 5;
-const MAX_OUTPUT_TOKENS = 1_800;
+const MAX_OUTPUT_TOKENS = 900;
+const GEMINI_THINKING_BUDGET = 512;
 
 type ModelProvider = "openai" | "gemini";
 type AiMode = "explain" | "custom" | "followup" | "general";
@@ -20,7 +20,8 @@ type AiQuestion = {
   question: string;
   choices: Record<string, string>;
   voteDistribution: Record<string, number>;
-  comments: { author: string; text: string; votes: number }[];
+  arnoutsComment?: string;
+  arnoutsAnswer?: string;
   hasImage?: boolean;
 };
 
@@ -34,7 +35,7 @@ type AiRequestBody = {
 };
 
 const SYSTEM_MESSAGE =
-  "You are a study assistant for ML/Google Cloud certification-style practice questions. The provided community votes and comments may be incorrect. Do not blindly follow them. Explain the concepts, evaluate the choices, and clearly separate community signal from your own technical assessment. Aim for about 600 visible tokens, so you are concise but still helpful and explanatory. Finish the answer completely; do not stop mid-choice or mid-sentence. Do not reveal hidden reasoning, chain-of-thought, scratchpad, internal analysis, or thinking process. Provide only the final study explanation. Use concise reasoning summaries when useful.";
+  "You are a study assistant for ML/Google Cloud certification-style practice questions. The source is unofficial. Community votes may be incorrect, and Arnout's answer/comment may also need technical verification. Explain the concepts, evaluate the choices, and clearly separate community vote signal, Arnout signal, and your own technical assessment. Aim for about 600 visible tokens, so you are concise but still helpful and explanatory. Finish the answer completely; do not stop mid-choice or mid-sentence. Do not reveal hidden reasoning, chain-of-thought, scratchpad, internal analysis, or thinking process. Provide only the final study explanation. Use concise reasoning summaries when useful.";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -72,20 +73,13 @@ function validateQuestion(value: unknown): AiQuestion | null {
     }
   }
 
-  const comments = Array.isArray(value.comments)
-    ? value.comments.flatMap((comment): AiQuestion["comments"] => {
-        if (!isRecord(comment)) return [];
-        if (typeof comment.author !== "string" || typeof comment.text !== "string") return [];
-        return [{ author: comment.author, text: comment.text, votes: typeof comment.votes === "number" ? comment.votes : 0 }];
-      })
-    : [];
-
   return {
     id: value.id,
     question: value.question,
     choices,
     voteDistribution,
-    comments: comments.slice(0, MAX_COMMENTS),
+    arnoutsComment: typeof value.arnoutsComment === "string" ? value.arnoutsComment : "",
+    arnoutsAnswer: typeof value.arnoutsAnswer === "string" ? value.arnoutsAnswer : "",
     hasImage: typeof value.hasImage === "boolean" ? value.hasImage : undefined,
   };
 }
@@ -97,10 +91,11 @@ function buildQuestionContext(question: AiQuestion, selectedAnswer?: string | nu
       question: question.question,
       choices: question.choices,
       communityVotes: question.voteDistribution,
+      arnoutsAnswer: question.arnoutsAnswer || null,
+      arnoutsComment: question.arnoutsComment || null,
       selectedAnswer: selectedAnswer ?? null,
-      retainedComments: question.comments.slice(0, MAX_COMMENTS),
       hasImage: question.hasImage ?? false,
-      note: "Unofficial study material. Community votes and comments may be wrong.",
+      note: "Unofficial study material. Community votes may be wrong. Arnout's answer is the preferred local answer key when provided, but still verify it technically.",
     },
     null,
     2,
@@ -109,7 +104,7 @@ function buildQuestionContext(question: AiQuestion, selectedAnswer?: string | nu
 
 function buildUserMessage(body: Required<Pick<AiRequestBody, "mode">> & AiRequestBody, question: AiQuestion) {
   if (body.mode === "explain") {
-    return `Explain this question. Compare the choices, discuss the community vote and comment signal separately, and say which answer you think is best based on technical reasoning.\n\nQuestion context:\n${buildQuestionContext(question, body.selectedAnswer)}`;
+    return `Explain this question. Compare the choices, discuss the community vote signal and Arnout signal separately, and say which answer you think is best based on technical reasoning.\n\nQuestion context:\n${buildQuestionContext(question, body.selectedAnswer)}`;
   }
 
   return `${body.userMessage}\n\nQuestion context:\n${buildQuestionContext(question, body.selectedAnswer)}`;
@@ -220,7 +215,7 @@ async function callGemini(messages: AiHistoryMessage[]) {
         contents,
         generationConfig: {
           maxOutputTokens: MAX_OUTPUT_TOKENS,
-          thinkingConfig: { thinkingBudget: 0 },
+          thinkingConfig: { thinkingBudget: GEMINI_THINKING_BUDGET },
         },
       }),
     },

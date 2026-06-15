@@ -298,30 +298,17 @@
     149
   ],
   "questionsMarkedHasImage": [
-    11,
     12,
-    21,
     22,
     23,
-    52,
     53,
-    125,
     126,
-    129,
-    144,
     145,
-    200,
     201,
-    239,
-    258,
-    259,
-    279
+    259
   ],
   "questionsWithUncertainImageDetection": [
-    129,
-    239,
-    259,
-    279
+    259
   ],
   "validationFailures": [],
   "aiRequestsMade": 0,
@@ -647,15 +634,6 @@
       "manualReview": true
     },
     {
-      "type": "image_detection",
-      "questionId": 129,
-      "sourcePage": 267,
-      "imageDimensions": null,
-      "bbox": null,
-      "reason": "question text refers to visual content but no clear extracted image was found",
-      "manualReview": true
-    },
-    {
       "type": "vote_distribution",
       "questionId": 136,
       "message": "Ignored unlabeled vote percentage(s): 5",
@@ -830,15 +808,6 @@
       "manualReview": true
     },
     {
-      "type": "image_detection",
-      "questionId": 239,
-      "sourcePage": 452,
-      "imageDimensions": null,
-      "bbox": null,
-      "reason": "question text refers to visual content but no clear extracted image was found",
-      "manualReview": true
-    },
-    {
       "type": "vote_distribution",
       "questionId": 242,
       "message": "Ignored unlabeled vote percentage(s): 10",
@@ -946,19 +915,72 @@
       "manualReview": true
     },
     {
-      "type": "image_detection",
-      "questionId": 279,
-      "sourcePage": 516,
-      "imageDimensions": null,
-      "bbox": null,
-      "reason": "question text refers to visual content but no clear extracted image was found",
-      "manualReview": true
-    },
-    {
       "type": "vote_distribution",
       "questionId": 281,
       "message": "Ignored unlabeled vote percentage(s): 10",
       "manualReview": true
     }
-  ]
+  ],
+  "questionImageExtraction": {
+    "questionsMarkedHasImage": [
+      12,
+      22,
+      23,
+      53,
+      126,
+      145,
+      201,
+      259
+    ],
+    "questionsWithExtractedImages": [
+      12,
+      22,
+      23,
+      53,
+      126,
+      145,
+      201,
+      259
+    ],
+    "questionsWithHasImageButNoExtractedImage": [],
+    "extractedImagePaths": {
+      "12": [
+        "/question-images/q012-1.png"
+      ],
+      "22": [
+        "/question-images/q022-1.png"
+      ],
+      "23": [
+        "/question-images/q023-1.png"
+      ],
+      "53": [
+        "/question-images/q053-1.png"
+      ],
+      "126": [
+        "/question-images/q126-1.png"
+      ],
+      "145": [
+        "/question-images/q145-1.png"
+      ],
+      "201": [
+        "/question-images/q201-1.png",
+        "/question-images/q201-2.png"
+      ],
+      "259": [
+        "/question-images/q259-1.png"
+      ]
+    },
+    "uncertainImageDetectionsRequiringManualReview": [],
+    "thresholds": {
+      "minImageWidth": 100,
+      "minImageHeight": 70,
+      "minImageArea": 7500,
+      "minRenderedBoxWidth": 90,
+      "minRenderedBoxHeight": 45,
+      "repeatedDecorationMinPages": 8,
+      "repeatedBboxTolerance": 8,
+      "cropPadding": 12,
+      "renderScale": 2.5
+    }
+  }
 }
