@@ -29,6 +29,7 @@ type AiQuestion = {
 type AiRequestBody = {
   modelProvider?: ModelProvider;
   mode?: AiMode;
+  questionId?: number;
   question?: AiQuestion;
   selectedAnswer?: string | null;
   userMessage?: string;
@@ -286,8 +287,12 @@ async function saveAskedQuestion(body: AiRequestBody, question: AiQuestion | nul
   } = await supabase.auth.getUser();
   if (!user) return;
 
+  const historyQuestionId =
+    question?.id ??
+    (typeof body.questionId === "number" && Number.isInteger(body.questionId) ? body.questionId : null);
+
   await supabase.from("ai_question_history").insert({
-    question_id: question?.id ?? null,
+    question_id: historyQuestionId,
     model_provider: body.modelProvider,
     model_id: modelIdForProvider(body.modelProvider),
     mode: body.mode,

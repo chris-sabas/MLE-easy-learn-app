@@ -50,13 +50,96 @@ function questionStatusClass(status: ProgressResult | "unanswered", theme: Theme
   return theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-300 bg-white text-stone-700";
 }
 
-function renderInlineMarkdown(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={index}>{part.slice(2, -2)}</strong>;
+const LATEX_SYMBOLS: Record<string, string> = {
+  "\\alpha": "alpha",
+  "\\beta": "beta",
+  "\\gamma": "gamma",
+  "\\delta": "delta",
+  "\\epsilon": "epsilon",
+  "\\lambda": "lambda",
+  "\\mu": "mu",
+  "\\pi": "pi",
+  "\\sigma": "sigma",
+  "\\theta": "theta",
+  "\\times": "x",
+  "\\cdot": "*",
+  "\\le": "<=",
+  "\\ge": ">=",
+  "\\neq": "!=",
+  "\\approx": "~",
+  "\\infty": "infinity",
+  "\\rightarrow": "->",
+  "\\leftarrow": "<-",
+};
+
+function splitLatexCommand(expression: string, command: string) {
+  if (!expression.startsWith(command + "{")) return null;
+  let depth = 0;
+  for (let index = command.length; index < expression.length; index += 1) {
+    const character = expression[index];
+    if (character === "{") depth += 1;
+    if (character === "}") depth -= 1;
+    if (depth === 0) {
+      return {
+        value: expression.slice(command.length + 1, index),
+        rest: expression.slice(index + 1),
+      };
     }
-    return part;
-  });
+  }
+  return null;
+}
+
+function renderLatexExpression(expression: string, display = false): ReactNode {
+  const trimmed = expression.trim();
+  const fraction = splitLatexCommand(trimmed, "\\frac");
+  if (fraction) {
+    const denominator = splitLatexCommand(fraction.rest, "");
+    if (denominator) {
+      return (
+        <span className={`inline-flex items-center gap-1 ${display ? "text-base" : ""}`}>
+          <span className="inline-flex flex-col items-center leading-tight">
+            <span>{renderLatexExpression(fraction.value)}</span>
+            <span className="h-px w-full bg-current" />
+            <span>{renderLatexExpression(denominator.value)}</span>
+          </span>
+          {denominator.rest ? <span>{renderLatexExpression(denominator.rest)}</span> : null}
+        </span>
+      );
+    }
+  }
+
+  let normalized = trimmed
+    .replace(/\\sqrt\{([^{}]+)\}/g, "sqrt($1)")
+    .replace(/\^\{([^{}]+)\}/g, "^($1)")
+    .replace(/_\{([^{}]+)\}/g, "_($1)")
+    .replace(/\\[a-zA-Z]+/g, (command) => LATEX_SYMBOLS[command] ?? command.replace("\\", ""))
+    .replace(/[{}]/g, "");
+
+  normalized = normalized.replace(/\s+/g, " ");
+  return <span className="font-serif">{normalized}</span>;
+}
+
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const parts: ReactNode[] = [];
+  const pattern = /(\\\(.+?\\\)|\$[^$\n]+\$|\*\*[^*]+\*\*)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text))) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    const part = match[0];
+    if (part.startsWith("**") && part.endsWith("**")) {
+      parts.push(<strong key={`strong-${match.index}`}>{part.slice(2, -2)}</strong>);
+    } else if (part.startsWith("\\(") && part.endsWith("\\)")) {
+      parts.push(<span key={`math-${match.index}`} className="rounded bg-black/5 px-1 dark:bg-white/10">{renderLatexExpression(part.slice(2, -2))}</span>);
+    } else if (part.startsWith("$") && part.endsWith("$")) {
+      parts.push(<span key={`math-${match.index}`} className="rounded bg-black/5 px-1 dark:bg-white/10">{renderLatexExpression(part.slice(1, -1))}</span>);
+    }
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
 }
 
 function renderMarkdown(content: string, theme: Theme) {
@@ -64,6 +147,7 @@ function renderMarkdown(content: string, theme: Theme) {
   const elements: ReactNode[] = [];
   let bullets: string[] = [];
   let tableRows: string[][] = [];
+  let mathBlock: string[] = [];
 
   function flushBullets() {
     if (!bullets.length) return;
@@ -109,15 +193,54 @@ function renderMarkdown(content: string, theme: Theme) {
     tableRows = [];
   }
 
+  function flushMathBlock() {
+    if (!mathBlock.length) return;
+    elements.push(
+      <div key={`math-${elements.length}`} className={`overflow-x-auto rounded border px-3 py-2 text-center ${theme === "dark" ? "border-stone-700 bg-stone-900 text-stone-100" : "border-stone-200 bg-stone-50 text-stone-900"}`}>
+        {renderLatexExpression(mathBlock.join(" "), true)}
+      </div>,
+    );
+    mathBlock = [];
+  }
+
   function parseTableRow(line: string) {
     return line.replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
   }
 
   lines.forEach((rawLine, index) => {
     const line = rawLine.trim();
+    if (mathBlock.length) {
+      if (line.endsWith("$$")) {
+        mathBlock.push(line.slice(0, -2));
+        flushMathBlock();
+      } else if (line.endsWith("\\]")) {
+        mathBlock.push(line.slice(0, -2));
+        flushMathBlock();
+      } else {
+        mathBlock.push(line);
+      }
+      return;
+    }
     if (!line) {
       flushBullets();
       flushTable();
+      return;
+    }
+    if ((line.startsWith("$$") && line.endsWith("$$") && line.length > 4) || (line.startsWith("\\[") && line.endsWith("\\]") && line.length > 4)) {
+      flushBullets();
+      flushTable();
+      const offset = line.startsWith("$$") ? 2 : 2;
+      elements.push(
+        <div key={`math-${index}`} className={`overflow-x-auto rounded border px-3 py-2 text-center ${theme === "dark" ? "border-stone-700 bg-stone-900 text-stone-100" : "border-stone-200 bg-stone-50 text-stone-900"}`}>
+          {renderLatexExpression(line.slice(offset, -offset), true)}
+        </div>,
+      );
+      return;
+    }
+    if (line.startsWith("$$") || line.startsWith("\\[")) {
+      flushBullets();
+      flushTable();
+      mathBlock = [line.slice(2)];
       return;
     }
     if (line.includes("|") && index + 1 < lines.length && /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(lines[index + 1])) {
@@ -164,6 +287,7 @@ function renderMarkdown(content: string, theme: Theme) {
 
   flushBullets();
   flushTable();
+  flushMathBlock();
   return elements;
 }
 
@@ -211,9 +335,7 @@ export default function Home() {
   const progressByQuestionId = useMemo(() => new Map(progress.map((record) => [record.question_id, record])), [progress]);
   const recommendedRangeStart = profile?.metrics_range_start ?? firstQuestion.id;
   const recommendedRangeEnd = profile?.metrics_range_end ?? lastQuestion.id;
-  const visibleAskedQuestions = selectedChoice
-    ? askedQuestions.filter((item) => item.question_id === currentQuestion.id || item.question_id === null)
-    : askedQuestions;
+  const visibleAskedQuestions = askedQuestions.filter((item) => item.question_id === currentQuestion.id);
 
   const expandedTopicQuestions = useMemo(
     () => expandedTopic ? sortedQuestions.filter((question) => question.tags.some((tag) => tag === expandedTopic)) : [],
@@ -580,6 +702,7 @@ export default function Home() {
         body: JSON.stringify({
           modelProvider,
           mode,
+          questionId: currentQuestion.id,
           question: includeQuestionContext
             ? {
                 id: currentQuestion.id,
@@ -605,7 +728,7 @@ export default function Home() {
         setAskedQuestions((items) => [
           {
             id: `${Date.now()}-${currentQuestion.id}`,
-            question_id: mode === "general" ? null : currentQuestion.id,
+            question_id: currentQuestion.id,
             user_message: userMessage,
             answer: data.message ?? "",
             created_at: new Date().toISOString(),

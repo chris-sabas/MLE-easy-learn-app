@@ -53,6 +53,8 @@ test("Typed AI questions are saved and shown as shared history", () => {
   assert.equal(cacheMigration.includes("ai_question_history_select_authenticated"), true);
   assert.equal(routeSource.includes("saveAskedQuestion(body, question, result.text)"), true);
   assert.equal(routeSource.includes("ai_question_history"), true);
+  assert.equal(routeSource.includes("questionId?: number"), true);
+  assert.equal(routeSource.includes("question?.id ??"), true);
   assert.equal(pageSource.includes("Previously asked questions"), true);
   assert.equal(pageSource.includes("viewAskedQuestion(item)"), true);
   assert.equal(pageSource.includes("activeAskedQuestionId === item.id"), true);
@@ -93,13 +95,15 @@ test("answering clears pre-answer AI chat and hides previous questions", () => {
   assert.equal(pageSource.includes("async function saveAnswerProgress"), true);
   assert.equal(pageSource.includes("setAiMessages([])"), true);
   assert.equal(pageSource.includes("visibleAskedQuestions"), true);
-  assert.equal(pageSource.includes("askedQuestions.filter((item) => item.question_id === currentQuestion.id || item.question_id === null)"), true);
+  assert.equal(pageSource.includes("askedQuestions.filter((item) => item.question_id === currentQuestion.id)"), true);
 });
 
 test("pre-answer AI asks general questions without quiz context", () => {
   assert.equal(pageSource.includes("Ask a general question"), true);
   assert.equal(pageSource.includes("The AI will not receive the quiz context yet."), true);
   assert.equal(pageSource.includes("const includeQuestionContext = selectedChoice !== null && mode !== \"general\""), true);
+  assert.equal(pageSource.includes("questionId: currentQuestion.id"), true);
+  assert.equal(pageSource.includes("question_id: currentQuestion.id"), true);
   assert.equal(routeSource.includes("buildGeneralUserMessage"), true);
   assert.equal(routeSource.includes("You are a study assistant for ML/Google Cloud certification-style practice questions.\\n\\n${userMessage}"), true);
   assert.equal(routeSource.includes("The user has not submitted an answer yet."), false);
@@ -116,6 +120,15 @@ test("AI answers render markdown-style content", () => {
   assert.equal(pageSource.includes("renderInlineMarkdown"), true);
   assert.equal(pageSource.includes("function flushTable"), true);
   assert.equal(pageSource.includes("<table"), true);
+});
+
+test("AI answers render LaTeX-style math", () => {
+  assert.equal(pageSource.includes("function renderLatexExpression"), true);
+  assert.equal(pageSource.includes("LATEX_SYMBOLS"), true);
+  assert.equal(pageSource.includes("\\\\frac"), true);
+  assert.equal(pageSource.includes("\\\\sqrt"), true);
+  assert.equal(pageSource.includes("\\\\("), true);
+  assert.equal(pageSource.includes("flushMathBlock"), true);
 });
 
 test("manual prompt can be copied", () => {
