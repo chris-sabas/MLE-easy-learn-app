@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import katex from "katex";
 import questionsData from "./data/questions.json";
 import {
   choiceEntries,
@@ -50,73 +51,21 @@ function questionStatusClass(status: ProgressResult | "unanswered", theme: Theme
   return theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-300" : "border-stone-300 bg-white text-stone-700";
 }
 
-const LATEX_SYMBOLS: Record<string, string> = {
-  "\\alpha": "alpha",
-  "\\beta": "beta",
-  "\\gamma": "gamma",
-  "\\delta": "delta",
-  "\\epsilon": "epsilon",
-  "\\lambda": "lambda",
-  "\\mu": "mu",
-  "\\pi": "pi",
-  "\\sigma": "sigma",
-  "\\theta": "theta",
-  "\\times": "x",
-  "\\cdot": "*",
-  "\\le": "<=",
-  "\\ge": ">=",
-  "\\neq": "!=",
-  "\\approx": "~",
-  "\\infty": "infinity",
-  "\\rightarrow": "->",
-  "\\leftarrow": "<-",
-};
-
-function splitLatexCommand(expression: string, command: string) {
-  if (!expression.startsWith(command + "{")) return null;
-  let depth = 0;
-  for (let index = command.length; index < expression.length; index += 1) {
-    const character = expression[index];
-    if (character === "{") depth += 1;
-    if (character === "}") depth -= 1;
-    if (depth === 0) {
-      return {
-        value: expression.slice(command.length + 1, index),
-        rest: expression.slice(index + 1),
-      };
-    }
-  }
-  return null;
-}
-
 function renderLatexExpression(expression: string, display = false): ReactNode {
-  const trimmed = expression.trim();
-  const fraction = splitLatexCommand(trimmed, "\\frac");
-  if (fraction) {
-    const denominator = splitLatexCommand(fraction.rest, "");
-    if (denominator) {
-      return (
-        <span className={`inline-flex items-center gap-1 ${display ? "text-base" : ""}`}>
-          <span className="inline-flex flex-col items-center leading-tight">
-            <span>{renderLatexExpression(fraction.value)}</span>
-            <span className="h-px w-full bg-current" />
-            <span>{renderLatexExpression(denominator.value)}</span>
-          </span>
-          {denominator.rest ? <span>{renderLatexExpression(denominator.rest)}</span> : null}
-        </span>
-      );
-    }
-  }
+  const html = katex.renderToString(expression.trim(), {
+    displayMode: display,
+    output: "html",
+    strict: "ignore",
+    throwOnError: false,
+    trust: false,
+  });
 
-  let normalized = trimmed
-    .replace(/\\sqrt\{([^{}]+)\}/g, "sqrt($1)")
-    .replace(/\^\{([^{}]+)\}/g, "^($1)")
-    .replace(/_\{([^{}]+)\}/g, "_($1)")
-    .replace(/\\[a-zA-Z]+/g, (command) => LATEX_SYMBOLS[command] ?? command.replace("\\", ""))
-    .replace(/[{}]/g, "");
-
-  normalized = normalized.replace(/\s+/g, " ");
-  return <span className="font-serif">{normalized}</span>;
+  return (
+    <span
+      className={display ? "block max-w-full overflow-x-auto py-1" : "inline-block max-w-full align-baseline"}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 function renderInlineMarkdown(text: string): ReactNode[] {

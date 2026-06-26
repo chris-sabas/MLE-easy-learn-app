@@ -123,12 +123,16 @@ test("AI answers render markdown-style content", () => {
 });
 
 test("AI answers render LaTeX-style math", () => {
+  const layoutSource = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const packageSource = readFileSync(new URL("../package.json", import.meta.url), "utf8");
   assert.equal(pageSource.includes("function renderLatexExpression"), true);
-  assert.equal(pageSource.includes("LATEX_SYMBOLS"), true);
-  assert.equal(pageSource.includes("\\\\frac"), true);
-  assert.equal(pageSource.includes("\\\\sqrt"), true);
+  assert.equal(pageSource.includes("katex.renderToString"), true);
+  assert.equal(pageSource.includes("throwOnError: false"), true);
+  assert.equal(pageSource.includes("trust: false"), true);
   assert.equal(pageSource.includes("\\\\("), true);
   assert.equal(pageSource.includes("flushMathBlock"), true);
+  assert.equal(layoutSource.includes("katex/dist/katex.min.css"), true);
+  assert.equal(packageSource.includes("\"katex\""), true);
 });
 
 test("manual prompt can be copied", () => {
