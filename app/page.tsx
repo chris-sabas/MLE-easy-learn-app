@@ -953,31 +953,7 @@ export default function Home() {
           <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{supabaseError}</div>
         ) : null}
 
-        <section className={`grid gap-3 rounded border p-3 md:grid-cols-[minmax(10rem,0.7fr)_minmax(13rem,1fr)_minmax(16rem,1.2fr)] md:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
-          <div className="flex flex-col gap-2">
-            <label className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`} htmlFor="question-number">
-              Select question
-            </label>
-            <form
-              className="flex gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                selectByNumber();
-              }}
-            >
-              <input
-                id="question-number"
-                className={`min-w-0 flex-1 rounded border px-3 py-2 ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-100" : "border-stone-300 bg-white"}`}
-                inputMode="numeric"
-                value={numberInput}
-                onChange={(event) => setNumberInput(event.target.value)}
-              />
-              <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" type="submit">
-                Go
-              </button>
-            </form>
-          </div>
-
+        <section className={`grid gap-3 rounded border p-3 md:grid-cols-[minmax(15rem,1.25fr)_minmax(10rem,0.8fr)_minmax(12rem,0.9fr)] md:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className={`font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>
@@ -1006,10 +982,34 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-2">
+            <label className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`} htmlFor="question-number">
+              Select question
+            </label>
+            <form
+              className="flex gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                selectByNumber();
+              }}
+            >
+              <input
+                id="question-number"
+                className={`min-w-0 flex-1 rounded border px-3 py-2 ${theme === "dark" ? "border-stone-700 bg-stone-950 text-stone-100" : "border-stone-300 bg-white"}`}
+                inputMode="numeric"
+                value={numberInput}
+                onChange={(event) => setNumberInput(event.target.value)}
+              />
+              <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" type="submit">
+                Go
+              </button>
+            </form>
+          </div>
+
+          <div className="flex flex-col gap-2">
             <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Recommended question</span>
             <div className="flex items-center gap-2">
               <p className={`min-w-0 flex-1 text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
-                Prioritizes your least-covered topics.
+                Prioritizes your least-covered topics in range.
               </p>
               <button className="shrink-0 rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRecommendedQuestion}>
                 Go
