@@ -235,11 +235,13 @@ test("AI provider model IDs and labels use the configured versions", () => {
 
 test("top question controls show progress for the selected profile range", () => {
   assert.equal(pageSource.includes("Range progress"), true);
-  assert.equal(pageSource.includes("md:grid-cols-[1fr_1fr_1fr]"), true);
+  assert.equal(pageSource.includes("md:grid-cols-[minmax(10rem,0.7fr)_minmax(13rem,1fr)_minmax(16rem,1.2fr)]"), true);
   assert.equal(pageSource.includes('role="progressbar"'), true);
   assert.equal(pageSource.includes("rangeMetrics.completionPercentage"), true);
   assert.equal(pageSource.includes("rangeMetrics.answered"), true);
   assert.equal(pageSource.includes("rangeMetrics.total"), true);
+  assert.ok(pageSource.indexOf("Select question") < pageSource.indexOf("Range progress"));
+  assert.ok(pageSource.indexOf("Range progress") < pageSource.indexOf("Recommended question"));
 });
 
 test("public header avoids local question count", () => {

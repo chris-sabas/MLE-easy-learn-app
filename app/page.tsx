@@ -953,7 +953,7 @@ export default function Home() {
           <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{supabaseError}</div>
         ) : null}
 
-        <section className={`grid gap-3 rounded border p-3 md:grid-cols-[1fr_1fr_1fr] md:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
+        <section className={`grid gap-3 rounded border p-3 md:grid-cols-[minmax(10rem,0.7fr)_minmax(13rem,1fr)_minmax(16rem,1.2fr)] md:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
           <div className="flex flex-col gap-2">
             <label className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`} htmlFor="question-number">
               Select question
@@ -976,16 +976,6 @@ export default function Home() {
                 Go
               </button>
             </form>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Recommended question</span>
-            <p className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
-              Prioritizes your least-covered topics.
-            </p>
-            <button className="mt-auto rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRecommendedQuestion}>
-              Recommend
-            </button>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -1013,6 +1003,18 @@ export default function Home() {
             <p className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
               {rangeMetrics.answered} of {rangeMetrics.total} answered
             </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Recommended question</span>
+            <div className="flex items-center gap-2">
+              <p className={`min-w-0 flex-1 text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
+                Prioritizes your least-covered topics.
+              </p>
+              <button className="shrink-0 rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRecommendedQuestion}>
+                Go
+              </button>
+            </div>
           </div>
 
           {message ? <p className="text-sm text-red-700 md:col-span-3">{message}</p> : null}
