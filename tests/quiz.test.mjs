@@ -140,10 +140,10 @@ test("recommended question uses only available IDs in the profile range", () => 
   const matches = questionsInRange(sorted, 40, 42);
   assert.deepEqual(matches.map((question) => question.id), [40, 41, 42]);
   assert.deepEqual(questionsInRange(sorted, 9999, 10000), []);
-  assert.equal(pageSource.includes("Recommended question in selected range"), true);
-  assert.equal(pageSource.includes("Using profile range"), true);
+  assert.equal(pageSource.includes("Recommended question"), true);
+  assert.equal(pageSource.includes("Prioritizes your least-covered topics."), true);
   assert.equal(pageSource.includes("chooseRecommendedQuestion"), true);
-  assert.equal(pageSource.includes("topics with the lowest answered percentage"), true);
+  assert.equal(pageSource.includes("weakestTopics"), true);
   assert.equal(pageSource.includes("Random range"), false);
 });
 

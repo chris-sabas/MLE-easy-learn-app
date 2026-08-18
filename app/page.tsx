@@ -953,7 +953,7 @@ export default function Home() {
           <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">{supabaseError}</div>
         ) : null}
 
-        <section className={`grid gap-3 rounded border p-3 sm:grid-cols-2 sm:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
+        <section className={`grid gap-3 rounded border p-3 md:grid-cols-[1fr_1fr_1fr] md:p-4 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
           <div className="flex flex-col gap-2">
             <label className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`} htmlFor="question-number">
               Select question
@@ -979,21 +979,19 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Recommended question in selected range</span>
-            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
-              <p className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
-                Using profile range {recommendedRangeStart}-{recommendedRangeEnd}; picks from topics with the lowest answered percentage.
-              </p>
-              <button className="rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRecommendedQuestion}>
-                Recommend
-              </button>
-            </div>
+            <span className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>Recommended question</span>
+            <p className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
+              Prioritizes your least-covered topics.
+            </p>
+            <button className="mt-auto rounded bg-teal-700 px-4 py-2 text-sm font-semibold text-white" onClick={chooseRecommendedQuestion}>
+              Recommend
+            </button>
           </div>
 
-          <div className="grid gap-2 sm:col-span-2">
+          <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className={`font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>
-                Range progress
+                Range progress <span className={`font-normal ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>{recommendedRangeStart}-{recommendedRangeEnd}</span>
               </span>
               <span className={`font-semibold tabular-nums ${theme === "dark" ? "text-teal-300" : "text-teal-700"}`}>
                 {rangeMetrics.completionPercentage}%
@@ -1013,11 +1011,11 @@ export default function Home() {
               />
             </div>
             <p className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
-              {rangeMetrics.answered} of {rangeMetrics.total} questions answered in range {recommendedRangeStart}-{recommendedRangeEnd}
+              {rangeMetrics.answered} of {rangeMetrics.total} answered
             </p>
           </div>
 
-          {message ? <p className="text-sm text-red-700 sm:col-span-2">{message}</p> : null}
+          {message ? <p className="text-sm text-red-700 md:col-span-3">{message}</p> : null}
         </section>
 
         <section className={`rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>

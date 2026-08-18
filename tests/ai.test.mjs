@@ -235,6 +235,7 @@ test("AI provider model IDs and labels use the configured versions", () => {
 
 test("top question controls show progress for the selected profile range", () => {
   assert.equal(pageSource.includes("Range progress"), true);
+  assert.equal(pageSource.includes("md:grid-cols-[1fr_1fr_1fr]"), true);
   assert.equal(pageSource.includes('role="progressbar"'), true);
   assert.equal(pageSource.includes("rangeMetrics.completionPercentage"), true);
   assert.equal(pageSource.includes("rangeMetrics.answered"), true);
