@@ -83,6 +83,14 @@ test("accuracy excludes ungraded", () => {
 test("bookmark behavior", () => {
   assert.equal(pageSource.includes("toggleBookmark"), true);
   assert.equal(pageSource.includes("from(\"bookmarks\").insert"), true);
+  assert.equal(pageSource.split("Question #{currentQuestion.id}").length - 1, 1);
+  const navigationSource = pageSource.slice(pageSource.indexOf('<div className="mt-5 flex justify-between gap-2">'));
+  const previousIndex = navigationSource.indexOf("Previous");
+  const bookmarkIndex = navigationSource.indexOf('{isBookmarked ? "Remove bookmark" : "Bookmark"}');
+  const nextIndex = navigationSource.indexOf("Next");
+  assert.ok(previousIndex >= 0 && bookmarkIndex >= 0 && nextIndex >= 0);
+  assert.ok(previousIndex < bookmarkIndex);
+  assert.ok(bookmarkIndex < nextIndex);
   assert.equal(profileSource.includes("removeBookmark"), true);
   assert.equal(profileSource.includes("from(\"bookmarks\").delete()"), true);
 });

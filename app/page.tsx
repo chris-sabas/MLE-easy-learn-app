@@ -1021,17 +1021,6 @@ export default function Home() {
         </section>
 
         <section className={`rounded border p-4 sm:p-5 ${theme === "dark" ? "border-stone-700 bg-stone-900" : "border-stone-300 bg-white"}`}>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <span className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Question #{currentQuestion.id}</span>
-            <button
-              className={`rounded border px-3 py-2 text-sm font-medium disabled:opacity-60 ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
-              disabled={savingBookmark}
-              onClick={() => toggleBookmark()}
-            >
-              {isBookmarked ? "Remove bookmark" : "Bookmark"}
-            </button>
-          </div>
-
           {currentQuestion.hasImage && questionImages.length === 0 ? (
             <div className="mb-4 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
               This question includes an image from the source document that is not currently displayed.
@@ -1146,13 +1135,22 @@ export default function Home() {
             >
               Previous
             </button>
-            <button
-              className={`rounded border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${theme === "dark" ? "border-stone-700" : "border-stone-300"}`}
-              disabled={currentIndex >= sortedQuestions.length - 1}
-              onClick={() => goToOffset(1)}
-            >
-              Next
-            </button>
+            <div className="flex gap-2">
+              <button
+                className={`rounded border px-3 py-2 text-sm font-medium disabled:opacity-60 ${theme === "dark" ? "border-stone-700 text-stone-100" : "border-stone-300 text-stone-900"}`}
+                disabled={savingBookmark}
+                onClick={() => toggleBookmark()}
+              >
+                {isBookmarked ? "Remove bookmark" : "Bookmark"}
+              </button>
+              <button
+                className={`rounded border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${theme === "dark" ? "border-stone-700" : "border-stone-300"}`}
+                disabled={currentIndex >= sortedQuestions.length - 1}
+                onClick={() => goToOffset(1)}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </section>
 
