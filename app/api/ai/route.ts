@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "../../../lib/supabase/server";
 
-const OPENAI_MODEL = "gpt-5.5";
-const GEMINI_MODEL = "gemini-3.5-flash";
+const OPENAI_MODEL = "gpt-5.6-terra";
+const GEMINI_MODEL = "gemini-3.6-flash";
 const MAX_USER_MESSAGE_LENGTH = 800;
 const MAX_HISTORY_MESSAGES = 6;
 const MAX_OUTPUT_TOKENS = 1_400;

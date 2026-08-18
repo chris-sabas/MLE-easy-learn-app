@@ -16,7 +16,7 @@ import {
   shouldShowCommunityData,
   type ChoiceKey,
 } from "../lib/quiz";
-import { getProgressResult, type ProgressRecord, type ProgressResult } from "../lib/progress";
+import { calculateMetrics, getProgressResult, type ProgressRecord, type ProgressResult } from "../lib/progress";
 import { createClient } from "../lib/supabase/client";
 
 const questions = normalizeQuestions(questionsData);
@@ -40,8 +40,8 @@ type ProfileState = {
   metrics_range_end: number;
 };
 const AI_MODEL_IDS: Record<ModelProvider, string> = {
-  openai: "gpt-5.5",
-  gemini: "gemini-3.5-flash",
+  openai: "gpt-5.6-terra",
+  gemini: "gemini-3.6-flash",
 };
 
 function questionStatusClass(status: ProgressResult | "unanswered", theme: Theme) {
@@ -284,6 +284,10 @@ export default function Home() {
   const progressByQuestionId = useMemo(() => new Map(progress.map((record) => [record.question_id, record])), [progress]);
   const recommendedRangeStart = profile?.metrics_range_start ?? firstQuestion.id;
   const recommendedRangeEnd = profile?.metrics_range_end ?? lastQuestion.id;
+  const rangeMetrics = useMemo(
+    () => calculateMetrics(sortedQuestions, progress, recommendedRangeStart, recommendedRangeEnd),
+    [progress, recommendedRangeEnd, recommendedRangeStart, sortedQuestions],
+  );
   const visibleAskedQuestions = askedQuestions.filter((item) => item.question_id === currentQuestion.id);
 
   const expandedTopicQuestions = useMemo(
@@ -758,8 +762,8 @@ export default function Home() {
               onChange={(event) => setModelProvider(event.target.value as ModelProvider)}
               disabled={aiLoading}
             >
-              <option value="openai">GPT 5.5</option>
-              <option value="gemini">Gemini 3.5 Flash</option>
+              <option value="openai">GPT 5.6 Terra</option>
+              <option value="gemini">Gemini 3.6 Flash</option>
             </select>
           </label>
         </div>
@@ -984,6 +988,33 @@ export default function Home() {
                 Recommend
               </button>
             </div>
+          </div>
+
+          <div className="grid gap-2 sm:col-span-2">
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className={`font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>
+                Range progress
+              </span>
+              <span className={`font-semibold tabular-nums ${theme === "dark" ? "text-teal-300" : "text-teal-700"}`}>
+                {rangeMetrics.completionPercentage}%
+              </span>
+            </div>
+            <div
+              aria-label={`Question progress for range ${recommendedRangeStart} to ${recommendedRangeEnd}`}
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={rangeMetrics.completionPercentage}
+              className={`h-2.5 overflow-hidden rounded-full ${theme === "dark" ? "bg-stone-700" : "bg-stone-200"}`}
+              role="progressbar"
+            >
+              <div
+                className="h-full rounded-full bg-teal-600 transition-[width] duration-300"
+                style={{ width: `${rangeMetrics.completionPercentage}%` }}
+              />
+            </div>
+            <p className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
+              {rangeMetrics.answered} of {rangeMetrics.total} questions answered in range {recommendedRangeStart}-{recommendedRangeEnd}
+            </p>
           </div>
 
           {message ? <p className="text-sm text-red-700 sm:col-span-2">{message}</p> : null}

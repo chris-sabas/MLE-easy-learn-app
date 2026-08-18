@@ -224,6 +224,23 @@ test("Gemini is the pre-answer default and GPT is the post-answer default", () =
   assert.equal(pageSource.includes("setModelProvider(\"openai\")"), true);
 });
 
+test("AI provider model IDs and labels use the configured versions", () => {
+  assert.equal(routeSource.includes('const OPENAI_MODEL = "gpt-5.6-terra"'), true);
+  assert.equal(routeSource.includes('const GEMINI_MODEL = "gemini-3.6-flash"'), true);
+  assert.equal(pageSource.includes('openai: "gpt-5.6-terra"'), true);
+  assert.equal(pageSource.includes('gemini: "gemini-3.6-flash"'), true);
+  assert.equal(pageSource.includes("GPT 5.6 Terra"), true);
+  assert.equal(pageSource.includes("Gemini 3.6 Flash"), true);
+});
+
+test("top question controls show progress for the selected profile range", () => {
+  assert.equal(pageSource.includes("Range progress"), true);
+  assert.equal(pageSource.includes('role="progressbar"'), true);
+  assert.equal(pageSource.includes("rangeMetrics.completionPercentage"), true);
+  assert.equal(pageSource.includes("rangeMetrics.answered"), true);
+  assert.equal(pageSource.includes("rangeMetrics.total"), true);
+});
+
 test("public header avoids local question count", () => {
   assert.equal(pageSource.includes("MLE certification practice"), true);
   assert.equal(pageSource.includes("questions loaded locally"), false);
